@@ -5,7 +5,7 @@ color 0B
 echo ====================================================================
 echo             PUSH KARIKA DIENG KE GITHUB REPOSITORY
 echo ====================================================================
-echo Target Repo: https://github.com/Amirul-Hasan99/KARIKA-DIENG.git
+echo Target Repo: https://github.com/Amirul-Hasan99/KARIKA-DIENG-UI
 echo Branch     : main
 echo.
 
@@ -24,7 +24,7 @@ git branch -M main
 
 :: 3. Set remote origin ke repositori KARIKA-DIENG
 git remote remove origin >nul 2>nul
-git remote add origin https://github.com/Amirul-Hasan99/KARIKA-DIENG.git
+git remote add origin https://github.com/Amirul-Hasan99/KARIKA-DIENG-UI
 
 :: 4. Input pesan commit (opsional, default: timestamp)
 set "COMMIT_MSG="
@@ -55,7 +55,7 @@ goto :push_failed
 color 0A
 echo.
 echo ====================================================================
-echo [SUKSES] Berhasil melakukan push ke https://github.com/Amirul-Hasan99/KARIKA-DIENG
+echo [SUKSES] Berhasil melakukan push ke https://github.com/Amirul-Hasan99/KARIKA-DIENG-UI
 echo ====================================================================
 goto :push_end
 
