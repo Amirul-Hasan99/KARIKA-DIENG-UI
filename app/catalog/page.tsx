@@ -421,7 +421,7 @@ export default function CatalogPage() {
         </div>
 
         {/* Product Cards Grid */}
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-3">
           {visible.map((p) => (
             <article
               key={p.id}
@@ -458,12 +458,9 @@ export default function CatalogPage() {
                   <p className="mt-2 line-clamp-2 min-h-12 text-sm leading-6 text-[#74736b]">
                     {p.description}
                   </p>
-                  <div className="mt-4 flex items-end justify-between border-t border-[#efeee9] py-4">
-                    <div>
-                      <p className="text-[11px] text-[#85857f]">{p.pack}</p>
-                      <p className="mt-0.5 text-xl font-black text-[#24251f]">{rupiah(p.price)}</p>
-                    </div>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-[#8a7200]">
+                  <div className="mt-4 flex items-center justify-between border-t border-[#efeee9] pt-4 pb-1">
+                    <p className="text-base xs:text-lg font-black text-[#24251f] whitespace-nowrap">{rupiah(p.price)}</p>
+                    <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#8a7200] shrink-0">
                       <span>Detail</span>
                       <Flaticon name="angle-small-right" className="text-sm" />
                     </span>
@@ -472,33 +469,30 @@ export default function CatalogPage() {
               </button>
 
               {p.is_available === false ? (
-                <div className="flex items-center justify-between border-t border-rose-100 px-5 py-3.5 bg-rose-50/70">
-                  <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
+                <div className="flex flex-col gap-1 border-t border-rose-100 px-4 py-3 bg-rose-50/70">
+                  <span className="text-[11px] font-bold text-rose-700 flex items-center gap-1.5">
                     <Flaticon name="cross-circle" className="text-xs text-rose-600" />
                     Stok Sedang Kosong
                   </span>
-                  <span className="text-[10px] uppercase font-bold text-rose-500 bg-white px-2 py-0.5 rounded border border-rose-200">
-                    Restock Segera
-                  </span>
                 </div>
               ) : (
-                <div className="flex items-center justify-between border-t border-[#efeee9] px-5 py-3 bg-[#faf9f5]">
-                  <span className="text-xs font-semibold text-[#75746d]">Tambah ke pesanan</span>
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-2.5 border-t border-[#efeee9] px-4 py-3 bg-[#faf9f5]">
+                  <span className="text-[11px] font-bold text-[#75746d] text-center uppercase tracking-wider">Tambah ke pesanan</span>
+                  <div className="flex items-center justify-center gap-4">
                     <button
                       aria-label={`Kurangi ${p.name}`}
                       onClick={() => change(p.id, -1)}
-                      className="grid h-8 w-8 place-items-center rounded-full border border-[#e4e1d7] bg-white hover:bg-[#f8f7f2] transition"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#e4e1d7] bg-white hover:bg-[#f8f7f2] transition"
                     >
-                      <Flaticon name="minus" className="text-xs" />
+                      <Flaticon name="minus" className="text-[10px]" />
                     </button>
-                    <span className="w-5 text-center text-sm font-bold">{cart[p.id] || 0}</span>
+                    <span className="w-6 text-center text-sm font-black text-[#24251f]">{cart[p.id] || 0}</span>
                     <button
                       aria-label={`Tambah ${p.name}`}
                       onClick={() => change(p.id, 1)}
-                      className="grid h-8 w-8 place-items-center rounded-full bg-[#f4ce00] hover:bg-[#dfba00] transition shadow-xs"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f4ce00] hover:bg-[#dfba00] transition shadow-xs text-black"
                     >
-                      <Flaticon name="plus" className="text-xs" />
+                      <Flaticon name="plus" className="text-[10px]" />
                     </button>
                   </div>
                 </div>
