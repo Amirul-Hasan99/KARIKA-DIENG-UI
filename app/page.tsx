@@ -576,50 +576,41 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {featuredProducts.map((p) => (
               <Card
                 key={p.id}
-                className="overflow-hidden rounded-3xl border-[#e8e5dc] bg-white shadow-xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
+                className="overflow-hidden rounded-2xl border-[#e8e5dc] bg-white shadow-xs hover:shadow-md transition-all group flex flex-col"
               >
-                <div>
-                  <div className="relative aspect-[4/3] overflow-hidden bg-[#eeece4]">
-                    <Image
-                      src={p.image}
-                      alt={p.name}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      unoptimized
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-black/80 text-white backdrop-blur-xs font-semibold text-[11px]">
-                        {p.tag}
-                      </Badge>
-                    </div>
+                <div className="relative aspect-square overflow-hidden bg-[#eeece4]">
+                  <Image
+                    src={p.image}
+                    alt={p.name}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 25vw"
+                    unoptimized
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute top-2 left-2">
+                    <Badge className="bg-black/80 text-white backdrop-blur-xs font-semibold text-[10px] px-1.5 py-0.5">
+                      {p.tag}
+                    </Badge>
                   </div>
-                  <CardHeader className="p-5 pb-2">
-                    <CardTitle className="text-lg font-bold group-hover:text-[#a48600] transition">
-                      {p.name}
-                    </CardTitle>
-                    <p className="text-xs font-semibold text-[#8a887d]">{p.pack}</p>
-                    <CardDescription className="text-xs text-[#6e6c62] mt-2 line-clamp-2 leading-relaxed">
-                      {p.desc}
-                    </CardDescription>
-                  </CardHeader>
                 </div>
-
-                <CardFooter className="p-5 pt-3 border-t border-[#f1eee4] flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-[#858379] block">Harga Paket</span>
-                    <span className="text-lg font-black text-[#24251f]">
-                      Rp{p.price.toLocaleString("id-ID")}
-                    </span>
-                  </div>
+                <CardHeader className="p-3 sm:p-4 flex-grow">
+                  <CardTitle className="text-sm sm:text-base font-bold leading-tight group-hover:text-[#a48600] transition">
+                    {p.name}
+                  </CardTitle>
+                  <p className="text-[10px] sm:text-xs font-semibold text-[#8a887d] mt-0.5">{p.pack}</p>
+                </CardHeader>
+                <CardFooter className="p-3 sm:p-4 pt-0 border-t border-[#f1eee4] flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-black text-[#24251f]">
+                    Rp{p.price.toLocaleString("id-ID")}
+                  </span>
                   <Link href="/catalog">
                     <Button
                       size="sm"
-                      className="rounded-xl font-bold bg-[#f4ce00] text-black hover:bg-[#dfba00] px-3.5"
+                      className="rounded-lg font-bold bg-[#f4ce00] text-black hover:bg-[#dfba00] h-7 px-2 text-[10px] sm:text-xs"
                     >
                       Pesan
                     </Button>
@@ -796,38 +787,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* LOCAL HERITAGE CALLOUT BANNER */}
-      <section className="mx-auto max-w-7xl px-5 sm:px-10 pb-16 sm:pb-24">
-        <div className="rounded-[2.5rem] bg-gradient-to-r from-[#292a23] to-[#1c1d18] text-white p-8 sm:p-14 shadow-xl relative overflow-hidden">
-          <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[#f4ce00]/10 blur-3xl pointer-events-none" />
-
-          <div className="max-w-2xl space-y-4">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1 text-xs font-semibold text-[#f4ce00] border border-white/15">
-              <Flaticon name="check-circle" variant="sr" className="text-xs text-[#f4ce00]" />
-              Langsung dari Pengrajin Lokal
-            </span>
-            <h2 className="text-3xl font-extrabold sm:text-4xl tracking-tight leading-tight">
-              Mendukung UMKM Dieng &amp; Petani Lokal Wonosobo
-            </h2>
-            <p className="text-sm sm:text-base text-[#cfccc2] leading-relaxed">
-              Setiap cup carica dan camilan yang Anda nikmati diproduksi dengan higienis oleh kelompok usaha mikro di kawasan dataran tinggi Dieng. Bersama kami, Anda ikut melestarikan kuliner khas nusantara.
-            </p>
-            <div className="pt-2">
-              <Link href="/catalog">
-                <Button
-                  size="lg"
-                  className="rounded-2xl bg-[#f4ce00] text-black hover:bg-[#dfba00] font-bold px-8 shadow-md gap-2"
-                >
-                  <span>Buka Menu &amp; Pesan Sekarang</span>
-                  <Flaticon name="arrow-right" variant="rr" className="text-sm" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* RICH, ENGAGING FOOTER */}
+      {/* FOOTER */}
       <footer className="border-t border-[#e5e1d3] bg-[#f2efe4] text-[#292a23]">
         <div className="mx-auto max-w-7xl px-5 pt-16 pb-12 sm:px-10">
           <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">

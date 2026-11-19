@@ -549,7 +549,7 @@ export default function CatalogPage() {
                 <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold">{selected.name}</h2>
                 <p className="mt-3 leading-7 text-[#686860] text-sm">{selected.description}</p>
                 <p className="mt-4 rounded-xl bg-[#f8f7f2] p-3 text-xs leading-5 text-[#727168] border border-[#e8e6dc]">
-                  Foto dan harga merupakan referensi publik produk sejenis. Merek dan kesegaran terjamin dari sentra oleh-oleh Dieng.
+                  Merek dan kesegaran terjamin dari sentra oleh-oleh Dieng.
                 </p>
               </div>
 

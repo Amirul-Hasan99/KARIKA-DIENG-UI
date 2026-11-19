@@ -48,6 +48,11 @@ if exist ".next\BUILD_ID" (
     rd /s /q .next 2>nul
 )
 
+:: Bebaskan port 3000 jika ada sisa proses Node yang masih menggantung
+for /f "tokens=5" %%a in ('netstat -a -n -o ^| findstr :3000 ^| findstr LISTENING') do (
+    taskkill /f /pid %%a >nul 2>nul
+)
+
 :: 5. Tampilkan Navigasi URL
 echo ====================================================================
 echo  Server berjalan di:

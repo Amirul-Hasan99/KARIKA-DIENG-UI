@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { AdminRevenueChart } from "@/components/admin/AdminRevenueChart";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { BrandLogoIcon } from "@/components/ui/BrandLogo";
 import { useKitchenOrders } from "@/hooks/useKitchenOrders";
@@ -62,7 +64,7 @@ export default function AdminDashboardPage() {
     playChime,
   } = useKitchenOrders();
 
-  const [activeTab, setActiveTab] = useState<"kds" | "transactions" | "stock">("kds");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "kds" | "transactions" | "stock">("dashboard");
   const [kdsFilter, setKdsFilter] = useState<"all" | "received" | "cooking" | "ready" | "completed" | "cancelled">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<Order | null>(null);
@@ -89,10 +91,16 @@ export default function AdminDashboardPage() {
     | "today"
     | "yesterday"
     | "this_week"
+    | "this_month"
     | "this_year"
+    | "january" | "february" | "march" | "april" | "may" | "june" 
+    | "july" | "august" | "september" | "october" | "november" | "december"
     | "custom";
 
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
   const [customStartDate, setCustomStartDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() - 7);
@@ -102,6 +110,8 @@ export default function AdminDashboardPage() {
     return new Date().toISOString().split("T")[0];
   });
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage: number = 25;
 
   // Product & Stock management state (Unified Karika Dieng Catalog)
   const [products, setProducts] = useState<KarikaProduct[]>(INITIAL_KARIKA_PRODUCTS);
@@ -539,21 +549,28 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
   // Helper for human-readable filter label
   const getDateFilterLabel = () => {
+    if (dateFilter.startsWith("january")) return "Januari";
+    if (dateFilter.startsWith("february")) return "Februari";
+    if (dateFilter.startsWith("march")) return "Maret";
+    if (dateFilter.startsWith("april")) return "April";
+    if (dateFilter.startsWith("may")) return "Mei";
+    if (dateFilter.startsWith("june")) return "Juni";
+    if (dateFilter.startsWith("july")) return "Juli";
+    if (dateFilter.startsWith("august")) return "Agustus";
+    if (dateFilter.startsWith("september")) return "September";
+    if (dateFilter.startsWith("october")) return "Oktober";
+    if (dateFilter.startsWith("november")) return "November";
+    if (dateFilter.startsWith("december")) return "Desember";
+
     switch (dateFilter) {
-      case "all":
-        return "Semua Transaksi";
-      case "today":
-        return "Hari Ini";
-      case "yesterday":
-        return "Kemarin";
-      case "this_week":
-        return "Minggu Ini";
-      case "this_year":
-        return `Tahun ${new Date().getFullYear()}`;
-      case "custom":
-        return `${customStartDate || "Awal"} s/d ${customEndDate || "Akhir"}`;
-      default:
-        return "Semua";
+      case "all": return "Semua Transaksi";
+      case "today": return "Hari Ini";
+      case "yesterday": return "Kemarin";
+      case "this_week": return "Minggu Ini";
+      case "this_month": return "Bulan Ini";
+      case "this_year": return "Tahunan";
+      case "custom": return `${customStartDate || "Awal"} s/d ${customEndDate || "Akhir"}`;
+      default: return "Semua";
     }
   };
 
@@ -568,7 +585,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
       const orderDate = new Date(o.created_at);
       if (isNaN(orderDate.getTime())) return false;
-      const today = new Date();
+      const today = new Date(currentTime);
 
       if (dateFilter === "today") {
         return (
@@ -606,6 +623,22 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
         return orderDate.getFullYear() === today.getFullYear();
       }
 
+      if (dateFilter === "this_month") {
+        return (
+          orderDate.getMonth() === today.getMonth() &&
+          orderDate.getFullYear() === today.getFullYear()
+        );
+      }
+
+      const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+      if (months.includes(dateFilter)) {
+        const monthIdx = months.indexOf(dateFilter);
+        return (
+          orderDate.getMonth() === monthIdx &&
+          orderDate.getFullYear() === today.getFullYear()
+        );
+      }
+
       if (dateFilter === "custom") {
         if (customStartDate) {
           const start = new Date(`${customStartDate}T00:00:00`);
@@ -620,7 +653,17 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
       return true;
     });
-  }, [orders, dateFilter, customStartDate, customEndDate, transactionStatusFilter]);
+  }, [orders, dateFilter, customStartDate, customEndDate, transactionStatusFilter, currentTime]);
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredTransactions.length / itemsPerPage);
+  }, [filteredTransactions.length, itemsPerPage]);
+
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredTransactions.slice(startIndex, endIndex);
+  }, [filteredTransactions, currentPage, itemsPerPage]);
 
   const settledOrders = useMemo(() => {
     return filteredTransactions.filter((o) => o.payment_status === "settlement");
@@ -892,17 +935,16 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
             >
               <BrandLogoIcon size={24} color="#f4ce00" />
             </Link>
-            <div className="min-w-0">
+            <div className="min-w-0 hidden sm:block">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <h1 className="text-sm sm:text-lg font-black tracking-tight text-[#24251f] truncate">
-                  <span className="sm:hidden">Dioleh - oleh Dieng</span>
-                  <span className="hidden sm:inline">DIOLEH - OLEH DIENG • ADMIN OPERASIONAL</span>
+                  DIOLEH - OLEH DIENG • ADMIN OPERASIONAL
                 </h1>
-                <span className="hidden sm:inline-flex rounded-full bg-[#f4ce00]/20 px-2.5 py-0.5 text-[10px] font-black text-[#857200] border border-[#f4ce00]/40 shrink-0">
+                <span className="inline-flex rounded-full bg-[#f4ce00]/20 px-2.5 py-0.5 text-[10px] font-black text-[#857200] border border-[#f4ce00]/40 shrink-0">
                   DIENG WONOSOBO
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-[#727168] truncate max-w-[190px] xs:max-w-xs sm:max-w-none">
+              <p className="text-[11px] sm:text-xs text-[#727168] truncate max-w-xs sm:max-w-none">
                 Pusat Pengelolaan Produk, Transaksi &amp; Pengantaran 8 KM
               </p>
             </div>
@@ -935,6 +977,33 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                 </>
               )}
             </button>
+
+            {/* Pagination Controls */}
+            {activeTab === "transactions" && filteredTransactions.length > itemsPerPage && (
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                <Button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg h-8 px-3"
+                >
+                  Sebelumnya
+                </Button>
+                <span>
+                  Halaman {currentPage} dari {totalPages}
+                </span>
+                <Button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg h-8 px-3"
+                >
+                  Berikutnya
+                </Button>
+              </div>
+            )}
 
             <Link
               href="/catalog"
@@ -1037,6 +1106,18 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
             <button
+              onClick={() => setActiveTab("dashboard")}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
+                activeTab === "dashboard"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              <Layers className="h-4 w-4" />
+              <span>Dashboard</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab("kds")}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
                 activeTab === "kds"
@@ -1098,6 +1179,33 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
         </div>
 
         {/* View 1: Order & Delivery Queue (Antrean Pesanan Oleh-Oleh) */}
+        {activeTab === "dashboard" && (
+          <div className="space-y-6 animate-in fade-in duration-500">
+             {/* KPI Cards */}
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                  <div className="text-slate-500 text-xs font-bold uppercase">Total Omzet</div>
+                  <div className="text-xl font-extrabold text-slate-900 mt-1">{formatRupiah(totalOmzet)}</div>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                  <div className="text-slate-500 text-xs font-bold uppercase">Total Pesanan</div>
+                  <div className="text-xl font-extrabold text-slate-900 mt-1">{filteredTransactions.length}</div>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                  <div className="text-slate-500 text-xs font-bold uppercase">Pesanan Sukses</div>
+                  <div className="text-xl font-extrabold text-slate-900 mt-1">{filteredTransactions.filter(o => o.payment_status === "settlement").length}</div>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                  <div className="text-slate-500 text-xs font-bold uppercase">Produk Terjual</div>
+                  <div className="text-xl font-extrabold text-slate-900 mt-1">{filteredTransactions.reduce((acc, o) => acc + (o.items?.length || 0), 0)}</div>
+                </div>
+             </div>
+
+             {/* Grafik Statistik Pendapatan ECharts */}
+             <AdminRevenueChart orders={orders} isLoading={isLoading} />
+          </div>
+        )}
+
         {activeTab === "kds" && (
           <div>
             {/* Status Filter Chips */}
@@ -1146,18 +1254,6 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
               </div>
             ) : (
               <>
-                {kdsOrders.length >= 2 && (
-                  <div className="flex sm:hidden items-center justify-between text-[11px] text-slate-500 mb-2.5 px-1">
-                    <span className="flex items-center gap-1 font-bold text-amber-800">
-                      <Package className="h-3.5 w-3.5 text-amber-600" />
-                      <span>{kdsOrders.length} Pesanan Antrean</span>
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 border border-amber-200/70 px-2.5 py-0.5 rounded-full font-semibold shadow-2xs">
-                      <span>2 Card ke bawah • Geser ke kanan</span>
-                      <ArrowRight className="h-3 w-3" />
-                    </span>
-                  </div>
-                )}
                 <div
                   className={`gap-3.5 sm:gap-4 pb-4 sm:pb-0 overflow-x-auto admin-order-scroll sm:overflow-visible snap-x snap-mandatory sm:snap-none ${
                     kdsOrders.length >= 2
@@ -1626,6 +1722,16 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     Minggu Ini
                   </button>
                   <button
+                    onClick={() => setDateFilter("this_month")}
+                    className={`rounded-lg px-2.5 py-1.5 font-bold transition ${
+                      dateFilter === "this_month"
+                        ? "bg-white text-slate-900 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Bulan Ini
+                  </button>
+                  <button
                     onClick={() => setDateFilter("this_year")}
                     className={`rounded-lg px-2.5 py-1.5 font-bold transition ${
                       dateFilter === "this_year"
@@ -1633,8 +1739,21 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    Tahunan ({new Date().getFullYear()})
+                    Tahunan
                   </button>
+                  {/* Monthly Dropdown */}
+                  <select
+                    className="rounded-lg border-none bg-transparent px-2.5 py-1.5 font-bold text-slate-600 outline-none hover:text-slate-900 focus:ring-0 cursor-pointer"
+                    onChange={(e) => setDateFilter(e.target.value as any)}
+                    value={["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"].includes(dateFilter) ? dateFilter : ""}
+                  >
+                    <option value="" disabled>Pilih Bulan...</option>
+                    {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
+                      <option key={m} value={["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"][i]}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     onClick={() => setDateFilter("custom")}
                     className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-bold transition ${
@@ -1693,14 +1812,11 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
-              {/* Petunjuk Geser Horizontal untuk Kenyamanan Admin */}
-              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-50/90 via-slate-50 to-white border-b border-slate-200 text-xs">
+              {/* Table Info Header */}
+              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500 text-white font-bold text-xs shadow-2xs">
-                    ⇄
-                  </span>
-                  <span className="font-bold text-slate-800">
-                    Tabel Responsif: Geser ke kanan (scroll horizontal) untuk melihat seluruh kolom data transaksi &amp; tombol aksi.
+                  <span className="font-bold text-slate-800 uppercase tracking-wider">
+                    Data Laporan Transaksi
                   </span>
                 </div>
                 <span className="text-[11px] font-bold text-amber-900 bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-full">
@@ -1725,14 +1841,14 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredTransactions.length === 0 ? (
+                    {paginatedTransactions.length === 0 ? (
                       <tr>
                         <td colSpan={9} className="py-8 text-center text-slate-400">
                           Tidak ada transaksi pada filter ini
                         </td>
                       </tr>
                     ) : (
-                      filteredTransactions.map((order) => (
+                      paginatedTransactions.map((order) => (
                         <tr key={order.id} className="hover:bg-slate-50/80 transition">
                           <td className="px-4 py-3 font-mono font-bold text-slate-900 whitespace-nowrap">
                             {order.order_number}
@@ -1850,6 +1966,47 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination Controls */}
+              {filteredTransactions.length > itemsPerPage && (
+                <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 bg-slate-50 border-t border-slate-200">
+                  <p className="text-xs font-semibold text-slate-500">
+                    Menampilkan <span className="text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> hingga <span className="text-slate-900">{Math.min(currentPage * itemsPerPage, filteredTransactions.length)}</span> dari <span className="text-slate-900">{filteredTransactions.length}</span> entri
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition"
+                    >
+                      Sebelumnya
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                         let pageNum = currentPage <= 3 ? i + 1 : (currentPage >= totalPages - 2 ? totalPages - 4 + i : currentPage - 2 + i);
+                         if (pageNum <= 0) return null;
+                         if (pageNum > totalPages) return null;
+                         return (
+                           <button
+                             key={pageNum}
+                             onClick={() => setCurrentPage(pageNum)}
+                             className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition ${currentPage === pageNum ? 'bg-amber-500 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:border-amber-300'}`}
+                           >
+                             {pageNum}
+                           </button>
+                         )
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition"
+                    >
+                      Berikutnya
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
