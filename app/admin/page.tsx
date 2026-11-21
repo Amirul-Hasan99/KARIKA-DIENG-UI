@@ -131,10 +131,18 @@ export default function AdminDashboardPage() {
   // Product & Stock management state (Unified Karika Dieng Catalog)
   const [products, setProducts] = useState<KarikaProduct[]>(INITIAL_KARIKA_PRODUCTS);
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>("Semua");
+  const [productSearchQuery, setProductSearchQuery] = useState<string>("");
+  const [productCurrentPage, setProductCurrentPage] = useState<number>(1);
+  const adminProductsPerPage = 9;
   const [isStockLoading, setIsStockLoading] = useState(false);
   const [updatingProductId, setUpdatingProductId] = useState<string | null>(null);
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editPriceVal, setEditPriceVal] = useState<number>(0);
+
+  // Reset pagination when category filter or search query changes
+  useEffect(() => {
+    setProductCurrentPage(1);
+  }, [productCategoryFilter, productSearchQuery]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(Date.now()), 30000);
@@ -2524,24 +2532,51 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                 </div>
               </div>
 
-              {/* Category Filter Chips */}
-              <div className="mt-4 pt-4 border-t border-[#efeee9] flex items-center gap-2 overflow-x-auto pb-1">
-                <span className="text-xs font-bold text-[#85857f] uppercase tracking-wider mr-1">
-                  Kategori:
-                </span>
-                {["Semua", "Carica", "Makanan", "Camilan", "Minuman"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setProductCategoryFilter(cat)}
-                    className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
-                      productCategoryFilter === cat
-                        ? "bg-[#292a23] text-white shadow-xs"
-                        : "bg-[#faf9f5] border border-[#e4e1d7] text-[#66665e] hover:bg-white"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+              {/* Category Filter Chips & Search Form */}
+              <div className="mt-4 pt-4 border-t border-[#efeee9] flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+                  <span className="text-xs font-bold text-[#85857f] uppercase tracking-wider mr-1 shrink-0">
+                    Kategori:
+                  </span>
+                  {["Semua", "Carica", "Makanan", "Camilan", "Minuman"].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setProductCategoryFilter(cat)}
+                      className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
+                        productCategoryFilter === cat
+                          ? "bg-[#292a23] text-white shadow-xs"
+                          : "bg-[#faf9f5] border border-[#e4e1d7] text-[#66665e] hover:bg-white"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Form Searching Produk */}
+                <div className="relative w-full md:w-72">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                    <Flaticon name="search" className="text-xs" />
+                  </span>
+                  <input
+                    type="text"
+                    aria-label="Cari produk di admin"
+                    placeholder="Cari nama / deskripsi produk..."
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    className="h-10 w-full rounded-xl border border-[#dcd8cc] bg-white pl-9 pr-8 text-xs font-semibold text-[#24251f] placeholder:text-slate-400 outline-none focus:border-[#90802a] focus:ring-1 focus:ring-[#90802a]"
+                  />
+                  {productSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setProductSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
+                      title="Hapus pencarian"
+                    >
+                      <Flaticon name="cross" className="text-[10px]" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -2550,177 +2585,308 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                 <Flaticon name="spinner" className="text-2xl animate-spin text-[#90802a] mx-auto mb-2" />
                 <p>Memuat katalog produk Dioleh - oleh Dieng...</p>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {products
-                  .filter(
-                    (p) =>
-                      productCategoryFilter === "Semua" || p.group === productCategoryFilter
-                  )
-                  .map((product) => {
-                    const isAvailable = product.is_available !== false;
-                    const isUpdating = updatingProductId === product.id;
-                    const isEditingPrice = editingPriceId === product.id;
+            ) : (() => {
+              const filteredAdminProducts = products.filter((p) => {
+                const matchCat =
+                  productCategoryFilter === "Semua" || p.group === productCategoryFilter;
+                const q = productSearchQuery.trim().toLowerCase();
+                const matchSearch =
+                  !q ||
+                  p.name.toLowerCase().includes(q) ||
+                  (p.description && p.description.toLowerCase().includes(q)) ||
+                  (p.group && p.group.toLowerCase().includes(q)) ||
+                  (p.pack && p.pack.toLowerCase().includes(q));
+                return matchCat && matchSearch;
+              });
 
-                    return (
-                      <div
-                        key={product.id}
-                        className={`rounded-3xl border transition-all overflow-hidden flex flex-col justify-between ${
-                          isAvailable
-                            ? "bg-white border-[#e9e7df] shadow-xs hover:shadow-md"
-                            : "bg-[#faf9f6] border-rose-200 opacity-85"
-                        }`}
-                      >
-                        <div>
-                          {/* Image Thumbnail & Status Badge */}
-                          <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#eeece4]">
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="h-full w-full object-cover"
-                            />
-                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                              <span className="rounded-full bg-[#292a23]/90 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                                {product.group}
-                              </span>
-                              <span className="rounded-full bg-white/95 px-2.5 py-0.5 text-[10px] font-semibold text-slate-800 shadow-xs">
-                                {product.pack}
-                              </span>
-                            </div>
+              const totalAdminPages = Math.max(1, Math.ceil(filteredAdminProducts.length / adminProductsPerPage));
+              const adminStartIndex = (productCurrentPage - 1) * adminProductsPerPage;
+              const paginatedAdminProducts = filteredAdminProducts.slice(
+                adminStartIndex,
+                adminStartIndex + adminProductsPerPage
+              );
 
-                            <span
-                              className={`absolute top-2.5 right-2.5 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-xs ${
-                                isAvailable
-                                  ? "bg-emerald-600 text-white"
-                                  : "bg-rose-600 text-white"
-                              }`}
-                            >
-                              {isAvailable ? "Tersedia" : "Stok Habis"}
-                            </span>
-                          </div>
+              return (
+                <div className="space-y-6">
+                  {/* Info Filter & Pencarian */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[#727168]">
+                    <div className="flex items-center gap-2">
+                      <span>
+                        Menampilkan{" "}
+                        <strong className="text-[#24251f]">
+                          {filteredAdminProducts.length === 0
+                            ? 0
+                            : `${adminStartIndex + 1}–${Math.min(
+                                adminStartIndex + adminProductsPerPage,
+                                filteredAdminProducts.length
+                              )}`}
+                        </strong>{" "}
+                        dari total{" "}
+                        <strong className="text-[#24251f]">{filteredAdminProducts.length}</strong> produk
+                      </span>
+                      {productSearchQuery && (
+                        <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200">
+                          Hasil pencarian: &quot;{productSearchQuery}&quot;
+                        </span>
+                      )}
+                    </div>
 
-                          {/* Content */}
-                          <div className="p-4 sm:p-5">
-                            <h4 className="text-base font-extrabold text-[#24251f]">
-                              {product.name}
-                            </h4>
-                            <p className="mt-1 text-xs text-[#74736b] line-clamp-2 leading-relaxed">
-                              {product.description}
-                            </p>
+                    {totalAdminPages > 1 && (
+                      <span className="font-semibold text-slate-500">
+                        Halaman <strong>{productCurrentPage}</strong> dari <strong>{totalAdminPages}</strong> (Maks. 9 kotak/halaman)
+                      </span>
+                    )}
+                  </div>
 
-                            {/* Price & Edit Block */}
-                            <div className="mt-4 pt-3 border-t border-[#efeee9] flex items-center justify-between">
-                              <div>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#958329]">
-                                  Harga Jual (Paket)
-                                </span>
-                                {isEditingPrice ? (
-                                  <div className="mt-1 flex items-center gap-1.5">
-                                    <input
-                                      type="number"
-                                      value={editPriceVal}
-                                      onChange={(e) => setEditPriceVal(Number(e.target.value))}
-                                      className="w-28 rounded-lg border border-[#f4ce00] px-2 py-1 text-xs font-bold text-[#24251f] outline-none"
-                                      autoFocus
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSavePrice(product.id)}
-                                      className="rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white hover:bg-emerald-700"
-                                    >
-                                      Simpan
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditingPriceId(null)}
-                                      className="rounded-lg bg-slate-200 px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-300"
-                                    >
-                                      Batal
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-lg font-black text-[#24251f]">
-                                      {formatRupiah(product.price)}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setEditingPriceId(product.id);
-                                        setEditPriceVal(product.price);
-                                      }}
-                                      className="text-[10px] font-bold text-[#8a7200] hover:underline"
-                                    >
-                                      [Ubah]
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                  {/* Empty State */}
+                  {paginatedAdminProducts.length === 0 ? (
+                    <div className="rounded-3xl border border-dashed border-[#dcd8cc] bg-white p-12 text-center space-y-3">
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#faf8ed] text-[#857200]">
+                        <Flaticon name="box-alt" className="text-2xl" />
+                      </div>
+                      <h4 className="text-sm font-extrabold text-[#24251f]">
+                        Tidak ada produk yang cocok
+                      </h4>
+                      <p className="text-xs text-[#727168] max-w-sm mx-auto">
+                        {productSearchQuery
+                          ? `Tidak ditemukan produk dengan kata kunci "${productSearchQuery}" pada kategori "${productCategoryFilter}".`
+                          : `Belum ada produk pada kategori "${productCategoryFilter}".`}
+                      </p>
+                      {(productSearchQuery || productCategoryFilter !== "Semua") && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProductSearchQuery("");
+                            setProductCategoryFilter("Semua");
+                          }}
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-[#292a23] text-white px-4 py-2 text-xs font-bold hover:bg-black transition"
+                        >
+                          Reset Pencarian &amp; Filter
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    /* Layout 9 Kotak Produk (Grid 3 Kolom x 3 Baris) */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                      {paginatedAdminProducts.map((product) => {
+                        const isAvailable = product.is_available !== false;
+                        const isUpdating = updatingProductId === product.id;
+                        const isEditingPrice = editingPriceId === product.id;
 
-                              <span className="text-[11px] font-semibold text-slate-400">
-                                {product.pack}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Card Action Footer */}
-                        <div className="p-4 sm:p-5 pt-0 space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEditProduct(product)}
-                              className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 px-3 text-xs font-bold text-slate-800 transition shadow-2xs"
-                              title="Edit Foto, Nama, Deskripsi, Kemasan & Harga"
-                            >
-                              <Flaticon name="edit" className="text-xs text-[#90802a]" />
-                              <span>Edit Produk</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteProduct(product.id, product.name)}
-                              className="flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 py-2 px-3 text-xs font-bold text-rose-700 transition"
-                              title="Hapus produk ini dari katalog"
-                            >
-                              <Flaticon name="trash" className="text-xs" />
-                              <span>Hapus</span>
-                            </button>
-                          </div>
-
-                          <button
-                            type="button"
-                            disabled={isUpdating}
-                            onClick={() => handleToggleStock(product.id, isAvailable)}
-                            className={`w-full flex items-center justify-center gap-2 rounded-xl py-2 px-4 text-xs font-bold transition shadow-xs disabled:opacity-50 ${
+                        return (
+                          <div
+                            key={product.id}
+                            className={`rounded-3xl border transition-all overflow-hidden flex flex-col justify-between ${
                               isAvailable
-                                ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
-                                : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20"
+                                ? "bg-white border-[#e9e7df] shadow-xs hover:shadow-md"
+                                : "bg-[#faf9f6] border-rose-200 opacity-85"
                             }`}
                           >
-                            {isUpdating ? (
-                              <>
-                                <Flaticon name="spinner" className="text-xs animate-spin" />
-                                <span>Menyimpan ke Katalog...</span>
-                              </>
-                            ) : isAvailable ? (
-                              <>
-                                <Flaticon name="cross-circle" className="text-xs" />
-                                <span>Tandai Habis (Sold Out)</span>
-                              </>
-                            ) : (
-                              <>
-                                <Flaticon name="check-circle" className="text-xs" />
-                                <span>Aktifkan Kembali ke Katalog</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
+                            <div>
+                              {/* Image Thumbnail & Status Badge (Rasio proporsional rapi) */}
+                              <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#eeece4]">
+                                <img
+                                  src={product.image}
+                                  alt={product.name}
+                                  className="h-full w-full object-cover transition duration-300 hover:scale-105"
+                                />
+                                <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                                  <span className="rounded-full bg-[#292a23]/90 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                                    {product.group}
+                                  </span>
+                                  <span className="rounded-full bg-white/95 px-2.5 py-0.5 text-[10px] font-semibold text-slate-800 shadow-xs">
+                                    {product.pack}
+                                  </span>
+                                </div>
+
+                                <span
+                                  className={`absolute top-2.5 right-2.5 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-xs ${
+                                    isAvailable
+                                      ? "bg-emerald-600 text-white"
+                                      : "bg-rose-600 text-white"
+                                  }`}
+                                >
+                                  {isAvailable ? "Tersedia" : "Stok Habis"}
+                                </span>
+                              </div>
+
+                              {/* Content */}
+                              <div className="p-4 sm:p-5">
+                                <h4 className="text-base font-extrabold text-[#24251f] line-clamp-1">
+                                  {product.name}
+                                </h4>
+                                <p className="mt-1 text-xs text-[#74736b] line-clamp-2 leading-relaxed">
+                                  {product.description}
+                                </p>
+
+                                {/* Price & Edit Block */}
+                                <div className="mt-4 pt-3 border-t border-[#efeee9] flex items-center justify-between">
+                                  <div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#958329]">
+                                      Harga Jual (Paket)
+                                    </span>
+                                    {isEditingPrice ? (
+                                      <div className="mt-1 flex items-center gap-1.5">
+                                        <input
+                                          type="number"
+                                          value={editPriceVal}
+                                          onChange={(e) => setEditPriceVal(Number(e.target.value))}
+                                          className="w-28 rounded-lg border border-[#f4ce00] px-2 py-1 text-xs font-bold text-[#24251f] outline-none"
+                                          autoFocus
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleSavePrice(product.id)}
+                                          className="rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white hover:bg-emerald-700"
+                                        >
+                                          Simpan
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingPriceId(null)}
+                                          className="rounded-lg bg-slate-200 px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-300"
+                                        >
+                                          Batal
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-lg font-black text-[#24251f]">
+                                          {formatRupiah(product.price)}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingPriceId(product.id);
+                                            setEditPriceVal(product.price);
+                                          }}
+                                          className="text-[10px] font-bold text-[#8a7200] hover:underline"
+                                        >
+                                          [Ubah]
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <span className="text-[11px] font-semibold text-slate-400">
+                                    {product.pack}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card Action Footer */}
+                            <div className="p-4 sm:p-5 pt-0 space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditProduct(product)}
+                                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 px-3 text-xs font-bold text-slate-800 transition shadow-2xs"
+                                  title="Edit Foto, Nama, Deskripsi, Kemasan & Harga"
+                                >
+                                  <Flaticon name="edit" className="text-xs text-[#90802a]" />
+                                  <span>Edit Produk</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteProduct(product.id, product.name)}
+                                  className="flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 py-2 px-3 text-xs font-bold text-rose-700 transition"
+                                  title="Hapus produk ini dari katalog"
+                                >
+                                  <Flaticon name="trash" className="text-xs" />
+                                  <span>Hapus</span>
+                                </button>
+                              </div>
+
+                              <button
+                                type="button"
+                                disabled={isUpdating}
+                                onClick={() => handleToggleStock(product.id, isAvailable)}
+                                className={`w-full flex items-center justify-center gap-2 rounded-xl py-2 px-4 text-xs font-bold transition shadow-xs disabled:opacity-50 ${
+                                  isAvailable
+                                    ? "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+                                    : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20"
+                                }`}
+                              >
+                                {isUpdating ? (
+                                  <>
+                                    <Flaticon name="spinner" className="text-xs animate-spin" />
+                                    <span>Menyimpan ke Katalog...</span>
+                                  </>
+                                ) : isAvailable ? (
+                                  <>
+                                    <Flaticon name="cross-circle" className="text-xs" />
+                                    <span>Tandai Habis (Sold Out)</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Flaticon name="check-circle" className="text-xs" />
+                                    <span>Aktifkan Kembali ke Katalog</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Pagination Controls untuk Kelola Produk Admin (Maksimal 9 Kotak) */}
+                  {totalAdminPages > 1 && (
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-[#e9e7df] pt-6">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setProductCurrentPage((prev) => Math.max(1, prev - 1))}
+                          disabled={productCurrentPage === 1}
+                          className="flex items-center gap-1.5 rounded-xl border border-[#d9d6cb] bg-white px-3 sm:px-4 py-2 text-xs font-bold text-[#24251f] hover:bg-[#faf9f5] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-2xs"
+                          title="Halaman Sebelumnya"
+                        >
+                          <Flaticon name="arrow-small-left" variant="rr" className="text-xs" />
+                          <span>Sebelumnya</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setProductCurrentPage((prev) => Math.min(totalAdminPages, prev + 1))}
+                          disabled={productCurrentPage === totalAdminPages}
+                          className="flex items-center gap-1.5 rounded-xl border border-[#d9d6cb] bg-white px-3 sm:px-4 py-2 text-xs font-bold text-[#24251f] hover:bg-[#faf9f5] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-2xs"
+                          title="Halaman Berikutnya"
+                        >
+                          <span>Berikutnya</span>
+                          <Flaticon name="arrow-small-right" variant="rr" className="text-xs" />
+                        </button>
                       </div>
-                    );
-                  })}
-              </div>
-            )}
+
+                      {/* Numbered Page Buttons */}
+                      <div className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 sm:pb-0">
+                        {Array.from({ length: totalAdminPages }, (_, idx) => idx + 1).map((pageNum) => (
+                          <button
+                            key={pageNum}
+                            type="button"
+                            onClick={() => setProductCurrentPage(pageNum)}
+                            className={`h-8 sm:h-9 min-w-8 sm:min-w-9 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition flex items-center justify-center ${
+                              productCurrentPage === pageNum
+                                ? "bg-[#292a23] text-[#f4ce00] shadow-xs"
+                                : "bg-[#faf9f5] text-[#24251f] border border-[#e4e1d7] hover:bg-[#f0eee6]"
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="text-xs text-[#77766f]">
+                        Halaman <strong className="text-[#24251f]">{productCurrentPage}</strong> dari{" "}
+                        <strong className="text-[#24251f]">{totalAdminPages}</strong>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 

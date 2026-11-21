@@ -324,7 +324,12 @@ export default function HomePage() {
                 oleh-olehnya.
               </h1>
 
-              <div className="flex flex-wrap items-center gap-3.5 pt-4">
+              {/* Narasi Panduan Pemesanan & Bantuan Admin */}
+              <p className="text-sm sm:text-base text-[#66645b] font-medium leading-relaxed max-w-xl">
+                Jika Anda kebingungan cara memesan oleh-oleh melalui sistem website ini, tim kami siap membantu Anda dengan senang hati. Cukup hubungi admin kami dengan mengklik tombol <strong>CHAT ADMIN</strong> di bawah ini untuk pemesanan langsung via WhatsApp.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3.5 pt-2">
                 <Link href="/catalog">
                   <Button
                     size="lg"
