@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Flaticon } from "@/components/ui/Flaticon";
 import { BrandLogoIcon } from "@/components/ui/BrandLogo";
+import { INITIAL_KARIKA_PRODUCTS, KarikaProduct } from "@/lib/karika-products-data";
 
 const heroImage = "/images/hero-dieng.jpg";
 
@@ -85,6 +86,48 @@ const deliveryStatusText: Record<string, { label: string; color: string }> = {
 
 export default function HomePage() {
   const [activeOrder, setActiveOrder] = useState<any | null>(null);
+  const [products, setProducts] = useState<KarikaProduct[]>(INITIAL_KARIKA_PRODUCTS);
+  const [adminPhone, setAdminPhone] = useState("083122046357");
+  const [adminDisplayPhone, setAdminDisplayPhone] = useState("0831-2204-6357");
+
+  // Pagination for 9 products (3x3 grid) on Landing Page
+  const [currentProductPage, setCurrentProductPage] = useState(1);
+  const itemsPerPage = 9;
+  const totalProductPages = Math.max(1, Math.ceil(products.length / itemsPerPage));
+  const startProductIndex = (currentProductPage - 1) * itemsPerPage;
+  const paginatedProducts = products.slice(startProductIndex, startProductIndex + itemsPerPage);
+
+  const handleProductPageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalProductPages) {
+      setCurrentProductPage(newPage);
+      const el = document.getElementById("pilihan-favorit");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  };
+
+  // Load live products and store settings
+  useEffect(() => {
+    fetch("/api/products", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.products) && d.products.length > 0) {
+          setProducts(d.products);
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings?.admin_whatsapp) {
+          setAdminPhone(d.settings.admin_whatsapp);
+          setAdminDisplayPhone(d.settings.admin_whatsapp_display || d.settings.admin_whatsapp);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const checkActiveOrder = async () => {
@@ -142,14 +185,14 @@ export default function HomePage() {
             <Link
               href="/admin/login"
               className="flex items-center gap-2 sm:gap-2.5 group"
-              title="Dioleh - oleh Dieng"
+              title="D OLEH - OLEH"
             >
               <span className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl bg-[#292a23] text-[#f4ce00] shadow-sm transition group-hover:bg-black shrink-0">
                 <BrandLogoIcon size={18} color="#f4ce00" />
               </span>
               <div className="flex flex-col">
                 <span className="text-base xs:text-lg sm:text-2xl font-black tracking-tight text-[#24251f] whitespace-nowrap">
-                  Dioleh - oleh <span className="text-[#90802a]">Dieng</span>
+                  D OLEH - OLEH
                 </span>
                 <span className="text-[10px] font-semibold text-[#7d7a6e] -mt-1 hidden md:inline">
                   Sentra Oleh-Oleh Khas Dataran Tinggi
@@ -159,15 +202,6 @@ export default function HomePage() {
           </div>
 
           <div className="hidden lg:flex items-center gap-3 text-xs xl:text-sm font-semibold text-[#5c5a52]">
-            <Link href="/catalog" className="hover:text-black transition px-1 py-0.5">
-              Katalog Lengkap
-            </Link>
-            <a href="#alur-pemesanan" className="hover:text-black transition px-1 py-0.5">
-              Alur Pemesanan
-            </a>
-            <a href="#keunggulan" className="hover:text-black transition px-1 py-0.5">
-              Keunggulan
-            </a>
             <a href="#pilihan-favorit" className="hover:text-black transition px-1 py-0.5">
               Produk Favorit
             </a>
@@ -279,6 +313,10 @@ export default function HomePage() {
             {/* Left Column: Headlines & Call to actions */}
             <div className="lg:col-span-7 space-y-6">
               <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl text-[#1e1f1a] leading-[1.08]">
+                 <span className="text-[#a48600]">
+                  D' oleh-Oleh
+                </span>{" "}
+                <br />
                 Dingin udaranya,{" "}
                 <span className="text-[#a48600]">
                   hangat &amp; manis
@@ -286,65 +324,39 @@ export default function HomePage() {
                 oleh-olehnya.
               </h1>
 
-              <p className="max-w-2xl text-lg text-[#615f56] leading-relaxed">
-                Manisan buah Carica pepaya gunung Dieng dengan sirup segar alami,
-                Mie Ongklok gurih berempah, dan keripik jamur renyah. Langsung
-                kami antarkan ke villa, homestay, atau hotel Anda di sekitar Dieng
-                tanpa repot macet.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center gap-3.5 pt-4">
                 <Link href="/catalog">
                   <Button
                     size="lg"
-                    className="rounded-2xl bg-[#282922] text-white hover:bg-black font-bold px-7 shadow-lg shadow-black/10 transition gap-2"
+                    className="h-12 sm:h-14 rounded-2xl bg-[#282922] text-white hover:bg-black font-extrabold px-7 sm:px-8 text-sm sm:text-base shadow-lg shadow-black/10 transition gap-2"
                   >
                     <span>Pilih Oleh-Oleh Sekarang</span>
                     <Flaticon name="arrow-right" variant="rr" className="text-sm" />
                   </Button>
                 </Link>
 
+                <a
+                  href={`https://wa.me/${adminPhone.replace(/[^0-9]/g, "").startsWith("62") ? adminPhone.replace(/[^0-9]/g, "") : `62${adminPhone.replace(/[^0-9]/g, "").replace(/^0/, "")}`}?text=${encodeURIComponent("Halo Admin D OLEH-OLEH, saya ingin bertanya mengenai produk oleh-oleh Dieng.")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-12 sm:h-14 items-center justify-center gap-2.5 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-black px-6 sm:px-8 text-sm sm:text-base shadow-lg shadow-emerald-600/30 hover:shadow-xl hover:shadow-emerald-600/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 fill-current shrink-0" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.842-.981z" />
+                  </svg>
+                  <span>CHAT ADMIN</span>
+                </a>
+
                 <a href="#pilihan-favorit">
                   <Button
                     variant="outline"
                     size="lg"
-                    className="rounded-2xl border-[#dcd8ca] bg-white font-semibold text-[#4f4d45] hover:bg-[#f4f2e9] gap-2"
+                    className="h-12 sm:h-14 rounded-2xl border-[#dcd8ca] bg-white font-bold text-[#4f4d45] hover:bg-[#f4f2e9] gap-2 px-5 text-sm"
                   >
-                    <span>Lihat Produk Unggulan</span>
+                    <span>Lihat Produk</span>
                     <Flaticon name="arrow-small-down" variant="rr" className="text-sm" />
                   </Button>
                 </a>
-              </div>
-
-              {/* Trust & Guarantee Pill */}
-              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#e8e5db]">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-[#8a7200] uppercase tracking-wider flex items-center gap-1">
-                    <Flaticon name="box-alt" variant="rr" className="text-xs" />
-                    Bebas Campur
-                  </p>
-                  <p className="text-xs font-medium text-[#6b6961]">
-                    Minimal 5 paket, pilih varian favorit
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-[#8a7200] uppercase tracking-wider flex items-center gap-1">
-                    <Flaticon name="truck-side" variant="rr" className="text-xs" />
-                    Radius 8 Km
-                  </p>
-                  <p className="text-xs font-medium text-[#6b6961]">
-                    Antar ke seluruh penginapan Dieng
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-[#8a7200] uppercase tracking-wider flex items-center gap-1">
-                    <Flaticon name="credit-card" variant="rr" className="text-xs" />
-                    QRIS &amp; COD
-                  </p>
-                  <p className="text-xs font-medium text-[#6b6961]">
-                    Bayar digital instan atau tunai
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -377,13 +389,10 @@ export default function HomePage() {
                   {/* Bottom Captions on image */}
                   <div className="absolute bottom-6 left-6 right-6 text-white space-y-2">
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f4ce00]">
-                      Kuliner Pegunungan Wonosobo
+                      D' Oleh-Oleh
                     </p>
-                    <h3 className="text-2xl font-bold leading-snug">
-                      Di jalan pegunungan yang berkabut, selalu ada rasa yang ingin dibawa pulang.
-                    </h3>
                     <p className="text-xs text-white/80 leading-relaxed pt-1">
-                      Pesan sekarang dan nikmati waktu liburan Anda di Dieng tanpa repot mengantre.
+                      Pesan sekarang dan nikmati waktu liburan Anda di Dieng.
                     </p>
                   </div>
                 </div>
@@ -393,169 +402,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ASYMMETRIC BENTO GRID FEATURE SECTION */}
-      <section id="keunggulan" className="py-16 sm:py-24 border-y border-[#e7e4d8] bg-white">
-        <div className="mx-auto max-w-7xl px-5 sm:px-10">
-          <div className="max-w-2xl">
-            <Badge variant="outline" className="border-[#d5d1c2] bg-[#f8f7f2] text-[#867100] font-bold">
-              Pelayanan Istimewa
-            </Badge>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-[#1e1f1a]">
-              Belanja oleh-oleh Dieng jadi lebih santai &amp; praktis.
-            </h2>
-            <p className="mt-3 text-[#69665c] leading-relaxed">
-              Kami menghadirkan pengalaman berbelanja yang disesuaikan untuk kenyamanan wisatawan dan rombongan keluarga di Dataran Tinggi Dieng.
-            </p>
-          </div>
-
-          {/* Dynamic Bento Grid using Shadcn Cards & Flaticon */}
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Bento Card 1: Wide 2-Column Focus on Carica Product */}
-            <Card className="sm:col-span-2 rounded-3xl border-[#e8e5dc] bg-gradient-to-br from-[#fbf9f1] via-white to-[#f5f2e6] shadow-sm hover:shadow-md transition">
-              <CardHeader className="p-7 sm:p-8">
-                <div className="flex items-center justify-between">
-                  <Badge variant="default" className="bg-[#f4ce00] text-black font-extrabold">
-                    Ikon Utama Dieng
-                  </Badge>
-                  <span className="text-xs font-semibold text-[#8a887d]">
-                    Vasconcellea cundinamarcensis
-                  </span>
-                </div>
-                <CardTitle className="mt-3 text-2xl font-bold">
-                  100% Buah Carica Asli Pegunungan Dieng
-                </CardTitle>
-                <CardDescription className="text-base text-[#6b685e] leading-relaxed mt-1">
-                  Hanya tumbuh optimal pada ketinggian di atas 1.500 mdpl. Daging buahnya kenyal lembut dengan rasa manis sedikit asam yang menyegarkan dahaga.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-7 sm:px-8 pb-7">
-                <div className="grid gap-4 sm:grid-cols-3 pt-2">
-                  <div className="rounded-2xl border border-[#e8e5dc] bg-white p-4">
-                    <p className="text-xs font-bold text-[#8a7200] flex items-center gap-1.5">
-                      <Flaticon name="leaf" variant="sr" className="text-xs" />
-                      Kaya Serat &amp; Enzim
-                    </p>
-                    <p className="text-xs text-[#706e64] mt-1 leading-relaxed">
-                      Membantu pencernaan dan tinggi kandungan vitamin C alami.
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-[#e8e5dc] bg-white p-4">
-                    <p className="text-xs font-bold text-[#8a7200] flex items-center gap-1.5">
-                      <Flaticon name="heart" variant="sr" className="text-xs" />
-                      Gula Asli Tanpa Pengawet
-                    </p>
-                    <p className="text-xs text-[#706e64] mt-1 leading-relaxed">
-                      Kuah sirup manis murni, aman dan lezat disajikan dingin.
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-[#e8e5dc] bg-white p-4">
-                    <p className="text-xs font-bold text-[#8a7200] flex items-center gap-1.5">
-                      <Flaticon name="box-alt" variant="sr" className="text-xs" />
-                      Kemasan Cup Praktis
-                    </p>
-                    <p className="text-xs text-[#706e64] mt-1 leading-relaxed">
-                      Tersedia kemasan plastik maupun kardus isi 6 siap bawa.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="px-7 sm:px-8 pb-7 pt-0 flex justify-between items-center">
-                <span className="text-xs font-semibold text-[#706e64]">
-                  Tersedia varian Biasa &amp; Premium
-                </span>
-                <Link href="/catalog">
-                  <Button variant="secondary" size="sm" className="rounded-xl font-bold bg-[#292a23] text-white hover:bg-black gap-1.5">
-                    <span>Lihat Paket Carica</span>
-                    <Flaticon name="angle-small-right" variant="rr" className="text-sm" />
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
-
-            {/* Bento Card 2: 1-Column Delivery Coverage */}
-            <Card className="rounded-3xl border-[#e8e5dc] bg-white shadow-sm hover:shadow-md transition flex flex-col justify-between">
-              <CardHeader className="p-7">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#eff9f4] text-[#15803d]">
-                  <Flaticon name="truck-side" variant="sr" className="text-xl" />
-                </div>
-                <CardTitle className="mt-4 text-xl font-bold">
-                  Diantar Sampai Pintu Villa &amp; Homestay
-                </CardTitle>
-                <CardDescription className="text-sm text-[#6b685e] leading-relaxed">
-                  Cukup pesan lewat ponsel Anda. Kurir kami mengantar ke penginapan di sekitar Dieng Kulon, Dieng Wetan, Sikunir, hingga Kejajar (radius 8 km).
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-7 pb-7 pt-0">
-                <div className="rounded-2xl bg-[#f8f7f2] p-4 text-xs space-y-1.5 border border-[#ece9df]">
-                  <p className="font-bold text-[#24251f] flex items-center gap-1">
-                    <Flaticon name="marker" variant="sr" className="text-xs text-[#a28b00]" />
-                    Area yang Tercover:
-                  </p>
-                  <p className="text-[#6d6b62]">
-                    Desa Dieng Kulon · Dieng Wetan · Sikunir Sembungan · Patakbanteng · Tieng · Kejajar.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Bento Card 3: 1-Column Mix & Match */}
-            <Card className="rounded-3xl border-[#e8e5dc] bg-white shadow-sm hover:shadow-md transition flex flex-col justify-between">
-              <CardHeader className="p-7">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#fdf8e6] text-[#b45309]">
-                  <Flaticon name="box-alt" variant="sr" className="text-xl" />
-                </div>
-                <CardTitle className="mt-4 text-xl font-bold">
-                  Bebas Mix Minimum 5 Paket
-                </CardTitle>
-                <CardDescription className="text-sm text-[#6b685e] leading-relaxed">
-                  Tidak harus satu jenis! Anda bisa memadukan 2 Carica, 1 Mie Ongklok instan, 1 Keripik Jamur, dan 1 Purwaceng untuk mencicipi seluruh cita rasa.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-7 pb-7 pt-0">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#8a7200]">
-                  <Flaticon name="check-circle" variant="sr" className="text-sm text-emerald-600" />
-                  <span>Sangat cocok untuk rombongan &amp; buah tangan</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Bento Card 4: 2-Column Payment & Transparency */}
-            <Card className="sm:col-span-2 rounded-3xl border-[#e8e5dc] bg-gradient-to-r from-white via-[#fbfbf8] to-[#f4f2e9] shadow-sm hover:shadow-md transition">
-              <CardHeader className="p-7 sm:p-8">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#f0f4ff] text-[#2563eb]">
-                  <Flaticon name="qr" variant="sr" className="text-xl" />
-                </div>
-                <CardTitle className="mt-4 text-2xl font-bold">
-                  Pembayaran Digital Instan (QRIS) &amp; Tunai di Tempat (COD)
-                </CardTitle>
-                <CardDescription className="text-base text-[#6b685e] leading-relaxed">
-                  Nikmati kemudahan bayar otomatis melalui scan barcode QRIS (semua bank &amp; dompet digital) atau bayar tunai langsung saat pesanan diserahkan oleh kurir.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-7 sm:px-8 pb-7 pt-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className="border-[#ded9cb] bg-white text-xs py-1">
-                    BCA Mobile &amp; Livin&apos;
-                  </Badge>
-                  <Badge variant="outline" className="border-[#ded9cb] bg-white text-xs py-1">
-                    GoPay, OVO &amp; DANA
-                  </Badge>
-                  <Badge variant="outline" className="border-[#ded9cb] bg-white text-xs py-1">
-                    ShopeePay
-                  </Badge>
-                  <Badge variant="outline" className="border-[#ded9cb] bg-white text-xs py-1">
-                    Cash on Delivery (COD)
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
       {/* FEATURED SIGNATURE PRODUCTS */}
-      <section id="pilihan-favorit" className="py-16 sm:py-24 bg-[#f8f7f2]">
-        <div className="mx-auto max-w-7xl px-5 sm:px-10">
+      <section id="pilihan-favorit" className="py-12 sm:py-24 bg-[#f8f7f2]">
+        <div className="mx-auto max-w-7xl px-3 sm:px-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <Badge variant="default" className="bg-[#f4ce00] text-black font-extrabold">
@@ -576,286 +425,173 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {featuredProducts.map((p) => (
+          {/* Product Cards Grid: Selalu 9 Kotak (3 Kolom x 3 Baris) di Mobile, Tablet & Desktop */}
+          <div className="mt-8 sm:mt-10 grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6">
+            {paginatedProducts.map((p) => (
               <Card
                 key={p.id}
-                className="overflow-hidden rounded-2xl border-[#e8e5dc] bg-white shadow-xs hover:shadow-md transition-all group flex flex-col"
+                className="overflow-hidden rounded-2xl sm:rounded-3xl border-[#e8e5dc] bg-white shadow-xs hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
               >
-                <div className="relative aspect-square overflow-hidden bg-[#eeece4]">
-                  <Image
-                    src={p.image}
-                    alt={p.name}
-                    fill
-                    sizes="(max-width: 640px) 50vw, 25vw"
-                    unoptimized
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute top-2 left-2">
-                    <Badge className="bg-black/80 text-white backdrop-blur-xs font-semibold text-[10px] px-1.5 py-0.5">
-                      {p.tag}
-                    </Badge>
+                <div>
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#eeece4]">
+                    <img
+                      src={p.image || "/images/hero-dieng.jpg"}
+                      alt={p.name}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/images/hero-dieng.jpg";
+                      }}
+                    />
+                    <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex flex-wrap items-center gap-1 sm:gap-1.5">
+                      <Badge className="bg-black/85 text-white backdrop-blur-xs font-bold text-[8px] sm:text-[11px] px-1.5 sm:px-2.5 py-0.5 rounded-full">
+                        {p.group}
+                      </Badge>
+                      <span className="hidden xs:inline-block rounded-full bg-white/95 px-1.5 sm:px-2.5 py-0.5 text-[8px] sm:text-[10px] font-bold text-slate-800 shadow-xs">
+                        {p.pack}
+                      </span>
+                    </div>
                   </div>
+
+                  <CardHeader className="p-2 sm:p-5 pb-1 sm:pb-2">
+                    <CardTitle className="text-xs sm:text-base lg:text-lg font-extrabold text-[#24251f] group-hover:text-[#a48600] transition leading-tight sm:leading-snug line-clamp-2 min-h-[2rem] sm:min-h-12">
+                      {p.name}
+                    </CardTitle>
+                    <p className="hidden sm:block text-xs text-[#737167] mt-1 line-clamp-2 leading-relaxed">
+                      {p.description}
+                    </p>
+                  </CardHeader>
                 </div>
-                <CardHeader className="p-3 sm:p-4 flex-grow">
-                  <CardTitle className="text-sm sm:text-base font-bold leading-tight group-hover:text-[#a48600] transition">
-                    {p.name}
-                  </CardTitle>
-                  <p className="text-[10px] sm:text-xs font-semibold text-[#8a887d] mt-0.5">{p.pack}</p>
-                </CardHeader>
-                <CardFooter className="p-3 sm:p-4 pt-0 border-t border-[#f1eee4] flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-black text-[#24251f]">
-                    Rp{p.price.toLocaleString("id-ID")}
-                  </span>
-                  <Link href="/catalog">
+
+                <CardFooter className="p-2 sm:p-5 pt-1.5 sm:pt-3 border-t border-[#f1eee4] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 mt-auto">
+                  <div className="w-full sm:w-auto">
+                    <span className="text-[8px] sm:text-[10px] font-bold text-[#958329] uppercase tracking-wider block">
+                      Harga
+                    </span>
+                    <span className="text-xs sm:text-base lg:text-lg font-black text-[#24251f]">
+                      Rp{p.price.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+
+                  <Link href="/catalog" className="w-full sm:w-auto">
                     <Button
                       size="sm"
-                      className="rounded-lg font-bold bg-[#f4ce00] text-black hover:bg-[#dfba00] h-7 px-2 text-[10px] sm:text-xs"
+                      className="w-full sm:w-auto rounded-lg sm:rounded-xl font-extrabold bg-[#f4ce00] text-black hover:bg-[#dfba00] h-7 sm:h-9 px-2 sm:px-4 text-[10px] sm:text-xs shadow-xs"
                     >
-                      Pesan
+                      <span>Pesan</span>
+                      <Flaticon name="shopping-bag" variant="sr" className="text-[10px] sm:text-xs ml-1" />
                     </Button>
                   </Link>
                 </CardFooter>
               </Card>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ALUR PEMESANAN PRAKTIS */}
-      <section id="alur-pemesanan" className="py-16 sm:py-24 border-y border-[#e7e4d8] bg-white">
-        <div className="mx-auto max-w-7xl px-5 sm:px-10">
-          <div className="text-center max-w-2xl mx-auto">
-            <Badge variant="outline" className="border-[#d5d1c2] bg-[#fdfcf7] text-[#867100] font-bold px-3 py-1 text-xs">
-              <Flaticon name="route" className="text-xs mr-1.5" />
-              Cara Pesan Mudah
-            </Badge>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-[#1e1f1a]">
-              Alur Pemesanan Cepat &amp; Praktis
-            </h2>
-            <p className="mt-3 text-[#69665c] leading-relaxed text-sm sm:text-base">
-              Belanja oleh-oleh khas Dieng tanpa perlu mengantre atau macet di jalan. Cukup 4 langkah dari ponsel Anda, kurir siap mengantar ke depan pintu penginapan.
-            </p>
-          </div>
+          {/* Pagination Navigation Controls di Bawah 9 Produk */}
+          {totalProductPages > 1 && (
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-[#e8e5dc] bg-white p-3 sm:p-4 shadow-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleProductPageChange(currentProductPage - 1)}
+                  disabled={currentProductPage === 1}
+                  className="flex items-center gap-1.5 rounded-xl border border-[#dcd7c8] bg-white px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-[#24251f] hover:bg-[#faf9f5] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-2xs"
+                  title="Halaman Sebelumnya"
+                >
+                  <Flaticon name="angle-small-left" className="text-sm" />
+                  <span>Sebelumnya</span>
+                </button>
 
-          {/* 4 Process Cards */}
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Step 1 */}
-            <Card className="relative rounded-3xl border-[#e8e5dc] bg-gradient-to-br from-[#faf8ed] via-white to-[#fbfaf3] p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4ce00] text-black font-black text-base shadow-xs">
-                    01
-                  </span>
-                  <Badge variant="outline" className="border-[#ded9cb] bg-white text-[11px] font-bold text-[#8a7200]">
-                    Bebas Campur
-                  </Badge>
-                </div>
-                <h3 className="text-lg font-bold text-[#24251f] flex items-center gap-2">
-                  <Flaticon name="shopping-bag" className="text-base text-[#90802a]" />
-                  <span>Pilih Produk</span>
-                </h3>
-                <p className="mt-2 text-xs text-[#6e6c62] leading-relaxed">
-                  Buka katalog dan pilih aneka manisan Carica, Mie Ongklok, Pitos, Keripik Jamur, atau Purwaceng. Minimal pemesanan 5 paket (bebas kombinasikan varian).
-                </p>
+                <button
+                  type="button"
+                  onClick={() => handleProductPageChange(currentProductPage + 1)}
+                  disabled={currentProductPage === totalProductPages}
+                  className="flex items-center gap-1.5 rounded-xl border border-[#dcd7c8] bg-white px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-[#24251f] hover:bg-[#faf9f5] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-2xs"
+                  title="Halaman Berikutnya"
+                >
+                  <span>Berikutnya</span>
+                  <Flaticon name="angle-small-right" className="text-sm" />
+                </button>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-[#eee9db]">
-                <span className="text-[11px] font-semibold text-[#8a7200] flex items-center gap-1">
-                  <Flaticon name="check-circle" className="text-[10px]" />
-                  9 Pilihan menu autentik Dieng
-                </span>
-              </div>
-            </Card>
-
-            {/* Step 2 */}
-            <Card className="relative rounded-3xl border-[#e8e5dc] bg-white p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#292a23] text-white font-black text-base shadow-xs">
-                    02
-                  </span>
-                  <Badge variant="outline" className="border-[#ded9cb] bg-[#faf9f5] text-[11px] font-bold text-[#8a7200]">
-                    Radius 8 KM
-                  </Badge>
-                </div>
-                <h3 className="text-lg font-bold text-[#24251f] flex items-center gap-2">
-                  <Flaticon name="marker" className="text-base text-[#90802a]" />
-                  <span>Titik Pengantaran</span>
-                </h3>
-                <p className="mt-2 text-xs text-[#6e6c62] leading-relaxed">
-                  Tentukan alamat hotel, villa, atau homestay Anda di sekitar Dieng. Anda bisa memilih pin lokasi Google Maps secara presisi untuk mempermudah kurir.
-                </p>
+              {/* Nomor Halaman */}
+              <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto max-w-full py-0.5">
+                {Array.from({ length: totalProductPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => handleProductPageChange(pageNum)}
+                    className={`h-8 sm:h-9 min-w-8 sm:min-w-9 px-2 sm:px-3 rounded-xl text-xs font-bold transition flex items-center justify-center ${
+                      currentProductPage === pageNum
+                        ? "bg-[#292a23] text-[#f4ce00] shadow-xs"
+                        : "bg-[#faf9f5] text-[#24251f] border border-[#e4e1d7] hover:bg-[#f0eee6]"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
               </div>
 
-              <div className="mt-5 pt-3 border-t border-[#efeee9]">
-                <span className="text-[11px] font-semibold text-[#8a7200] flex items-center gap-1">
-                  <Flaticon name="check-circle" className="text-[10px]" />
-                  Dieng Kulon, Wetan, Sikunir tercover
-                </span>
-              </div>
-            </Card>
-
-            {/* Step 3 */}
-            <Card className="relative rounded-3xl border-[#e8e5dc] bg-gradient-to-br from-[#faf8ed] via-white to-[#fbfaf3] p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4ce00] text-black font-black text-base shadow-xs">
-                    03
-                  </span>
-                  <Badge variant="outline" className="border-[#ded9cb] bg-white text-[11px] font-bold text-[#8a7200]">
-                    QRIS &amp; COD
-                  </Badge>
-                </div>
-                <h3 className="text-lg font-bold text-[#24251f] flex items-center gap-2">
-                  <Flaticon name="qr" className="text-base text-[#90802a]" />
-                  <span>Pilih Pembayaran</span>
-                </h3>
-                <p className="mt-2 text-xs text-[#6e6c62] leading-relaxed">
-                  Pilih bayar digital instan via barcode QRIS (GoPay, OVO, ShopeePay, m-Banking) atau bayar tunai di tempat (COD) saat kurir sampai di penginapan Anda.
-                </p>
-              </div>
-
-              <div className="mt-5 pt-3 border-t border-[#eee9db]">
-                <span className="text-[11px] font-semibold text-[#8a7200] flex items-center gap-1">
-                  <Flaticon name="check-circle" className="text-[10px]" />
-                  Tanpa repot transfer manual
-                </span>
-              </div>
-            </Card>
-
-            {/* Step 4 */}
-            <Card className="relative rounded-3xl border-[#e8e5dc] bg-white p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#292a23] text-[#f4ce00] font-black text-base shadow-xs">
-                    04
-                  </span>
-                  <Badge variant="outline" className="border-[#ded9cb] bg-[#faf9f5] text-[11px] font-bold text-[#8a7200]">
-                    Input No. WA
-                  </Badge>
-                </div>
-                <h3 className="text-lg font-bold text-[#24251f] flex items-center gap-2">
-                  <Flaticon name="truck-side" className="text-base text-[#90802a]" />
-                  <span>Pantau Pengantaran</span>
-                </h3>
-                <p className="mt-2 text-xs text-[#6e6c62] leading-relaxed">
-                  Setelah checkout, Anda diarahkan ke laman pantau. Jika browser ditutup atau reload, cukup masukkan nomor WhatsApp Anda di menu Pantau Pesanan kapan saja!
-                </p>
-              </div>
-
-              <div className="mt-5 pt-3 border-t border-[#efeee9]">
-                <span className="text-[11px] font-semibold text-[#8a7200] flex items-center gap-1">
-                  <Flaticon name="check-circle" className="text-[10px]" />
-                  Status tidak hilang saat reload
-                </span>
-              </div>
-            </Card>
-          </div>
-
-          {/* Quick Action Navigation Bar inside flow section */}
-          <div className="mt-12 rounded-3xl border border-[#e4e1d7] bg-[#faf9f5] p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#292a23] text-[#f4ce00] shrink-0 shadow-xs">
-                <Flaticon name="truck-side" className="text-xl" />
-              </span>
-              <div>
-                <h4 className="text-base font-extrabold text-[#24251f]">
-                  Sudah Pernah Memesan Sebelumnya?
-                </h4>
-                <p className="text-xs text-[#727168] mt-0.5">
-                  Cek posisi kurir dan status pesanan Anda hanya dengan memasukkan nomor WhatsApp.
-                </p>
+              <div className="text-xs text-[#737167]">
+                Halaman <strong className="text-[#24251f]">{currentProductPage}</strong> dari{" "}
+                <strong className="text-[#24251f]">{totalProductPages}</strong>
               </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <Link href="/orders" className="w-full sm:w-auto">
-                <Button variant="outline" className="w-full sm:w-auto rounded-xl border-[#d8d5c7] bg-white hover:bg-[#f5f4ed] font-bold text-xs sm:text-sm px-5 text-[#24251f]">
-                  <Flaticon name="search" className="text-xs mr-1.5 text-[#90802a]" />
-                  <span>Pantau Pesanan Saya</span>
-                </Button>
-              </Link>
-              <Link href="/catalog" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto rounded-xl bg-[#292a23] hover:bg-black font-extrabold text-xs sm:text-sm px-6 text-white shadow-sm">
-                  <span>Mulai Belanja</span>
-                  <Flaticon name="arrow-right" className="text-xs ml-1.5" />
-                </Button>
-              </Link>
-            </div>
+          <div className="mt-8 text-center">
+            <Link
+              href="/catalog"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#292a23] hover:bg-black text-[#f4ce00] px-6 py-3 text-xs sm:text-sm font-extrabold shadow-md transition"
+            >
+              <Flaticon name="shop" className="text-sm" />
+              <span>Buka Katalog Lengkap</span>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
       <footer className="border-t border-[#e5e1d3] bg-[#f2efe4] text-[#292a23]">
-        <div className="mx-auto max-w-7xl px-5 pt-16 pb-12 sm:px-10">
-          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
-            {/* Column 1: Brand & About */}
-            <div className="lg:col-span-2 space-y-4">
-              <Link href="/" className="inline-flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#292a23] text-[#f4ce00] shadow-xs">
-                  <BrandLogoIcon size={18} color="#f4ce00" />
+        <div className="mx-auto max-w-7xl px-5 pt-12 pb-10 sm:px-10">
+          <div className="grid gap-8 md:grid-cols-3">
+            {/* Column 1: INFORMASI */}
+            <div className="space-y-3.5">
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-wider text-[#8a7200] block">
+                  INFORMASI
                 </span>
-                <span className="text-2xl font-black tracking-tight text-[#24251f]">
-                  Dioleh - oleh <span className="text-[#90802a]">Dieng</span>
-                </span>
-              </Link>
-              <p className="text-sm text-[#66645a] leading-relaxed max-w-sm">
+                <Link href="/" className="inline-flex items-center gap-2">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#292a23] text-[#f4ce00] shadow-xs">
+                    <BrandLogoIcon size={18} color="#f4ce00" />
+                  </span>
+                  <span className="text-xl font-black tracking-tight text-[#24251f]">
+                    D OLEH - OLEH
+                  </span>
+                </Link>
+              </div>
+              <p className="text-xs sm:text-sm text-[#66645a] leading-relaxed max-w-sm">
                 Pusat pemesanan oleh-oleh khas dataran tinggi Dieng &amp; Kabupaten Wonosobo. Layanan antar cepat ke penginapan, homestay, dan hotel dalam radius 8 km dari Titik Nol Dieng.
               </p>
-              <div className="flex items-center gap-2 pt-2 text-xs font-semibold text-[#545249]">
-                <Flaticon name="marker" variant="sr" className="text-xs text-[#938126]" />
-                <span>Titik 0 Km Dieng, Kejajar, Wonosobo, Jawa Tengah</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-[#545249]">
-                <Flaticon name="clock" variant="sr" className="text-xs text-[#938126]" />
-                <span>Buka Setiap Hari: 07.00 - 21.00 WIB</span>
+              <div className="space-y-1.5 pt-1 text-xs text-[#545249]">
+                <div className="flex items-center gap-2 font-medium">
+                  <Flaticon name="marker" variant="sr" className="text-xs text-[#938126]" />
+                  <span>Titik 0 Km Dieng, Kejajar, Wonosobo, Jawa Tengah</span>
+                </div>
+                <div className="flex items-center gap-2 font-medium">
+                  <Flaticon name="clock" variant="sr" className="text-xs text-[#938126]" />
+                  <span>Buka Setiap Hari: 07.00 - 21.00 WIB</span>
+                </div>
               </div>
             </div>
 
-            {/* Column 2: Ragam Produk */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-[#1e1f1a]">
-                Koleksi Oleh-Oleh
+            {/* Column 2: BANTUAN */}
+            <div className="space-y-3.5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#8a7200]">
+                BANTUAN
               </h3>
-              <ul className="space-y-2 text-sm text-[#66645a]">
+              <ul className="space-y-2.5 text-xs sm:text-sm text-[#66645a]">
                 <li>
-                  <Link href="/catalog" className="hover:text-black transition">
-                    Carica Delicia &amp; Biasa
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/catalog" className="hover:text-black transition">
-                    Carica Premium Cup Besar
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/catalog" className="hover:text-black transition">
-                    Mie Ongklok Instan
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/catalog" className="hover:text-black transition">
-                    Keripik Jamur &amp; Combro
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/catalog" className="hover:text-black transition">
-                    Minuman Purwaceng Alami
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 3: Layanan & Informasi */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-[#1e1f1a]">
-                Bantuan &amp; Info
-              </h3>
-              <ul className="space-y-2 text-sm text-[#66645a]">
-                <li>
-                  <Link href="/orders" className="hover:text-black transition font-bold text-[#8a7200] flex items-center gap-1">
+                  <Link href="/orders" className="hover:text-black transition font-bold text-[#8a7200] flex items-center gap-1.5">
                     <Flaticon name="truck-side" className="text-xs" />
                     <span>Pantau Status Pesanan</span>
                   </Link>
@@ -882,53 +618,41 @@ export default function HomePage() {
                 </li>
                 <li>
                   <a
-                    href="https://wa.me/6287839439540"
+                    href={`https://wa.me/${adminPhone.replace(/[^0-9]/g, "").startsWith("62") ? adminPhone.replace(/[^0-9]/g, "") : `62${adminPhone.replace(/[^0-9]/g, "").replace(/^0/, "")}`}?text=${encodeURIComponent("Halo Admin D OLEH-OLEH, saya butuh bantuan mengenai pemesanan.")}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[#15803d] font-semibold hover:underline"
+                    className="inline-flex items-center gap-1.5 text-[#15803d] font-bold hover:underline"
                   >
                     <Flaticon name="phone-call" variant="sr" className="text-xs" />
-                    WhatsApp CS (0878-3943-9540)
+                    <span>WhatsApp CS ({adminDisplayPhone})</span>
                   </a>
                 </li>
               </ul>
             </div>
 
-            {/* Column 4: Metode Pembayaran */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-[#1e1f1a]">
-                Metode Pembayaran
+            {/* Column 3: METODE PEMBAYARAN */}
+            <div className="space-y-3.5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#8a7200]">
+                METODE PEMBAYARAN
               </h3>
-              <p className="text-xs text-[#66645a] leading-relaxed">
-                Mendukung QRIS instan seluruh perbankan dan e-Wallet serta Tunai (COD).
+              <p className="text-xs sm:text-sm text-[#66645a] leading-relaxed">
+                Mendukung QRIS instan seluruh perbankan dan e-Wallet serta Tunai di tempat (COD).
               </p>
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                <span className="rounded-md bg-white border border-[#e1ded2] px-2 py-1 text-[11px] font-bold text-slate-800">
+              <div className="flex flex-wrap gap-2 pt-1">
+                <span className="rounded-xl bg-white border border-[#ded9cb] px-3.5 py-1.5 text-xs font-black text-slate-800 shadow-2xs">
                   QRIS
                 </span>
-                <span className="rounded-md bg-white border border-[#e1ded2] px-2 py-1 text-[11px] font-bold text-slate-800">
-                  GoPay
-                </span>
-                <span className="rounded-md bg-white border border-[#e1ded2] px-2 py-1 text-[11px] font-bold text-slate-800">
-                  ShopeePay
-                </span>
-                <span className="rounded-md bg-white border border-[#e1ded2] px-2 py-1 text-[11px] font-bold text-slate-800">
-                  BCA
-                </span>
-                <span className="rounded-md bg-white border border-[#e1ded2] px-2 py-1 text-[11px] font-bold text-slate-800">
-                  Mandiri
-                </span>
-                <span className="rounded-md bg-white border border-[#e1ded2] px-2 py-1 text-[11px] font-bold text-slate-800">
-                  COD Tunai
+                <span className="rounded-xl bg-white border border-[#ded9cb] px-3.5 py-1.5 text-xs font-black text-slate-800 shadow-2xs">
+                  COD (Tunai)
                 </span>
               </div>
             </div>
           </div>
 
           {/* Bottom Copyright and Security Bar */}
-          <div className="mt-12 pt-8 border-t border-[#e2decfa0] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#7e7b70]">
+          <div className="mt-10 pt-6 border-t border-[#e2decfa0] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#7e7b70]">
             <p>
-              &copy; {new Date().getFullYear()} Dioleh - oleh Dieng · Sentra Oleh-Oleh Wonosobo. Seluruh hak cipta dilindungi.
+              &copy; {new Date().getFullYear()} D OLEH - OLEH · Sentra Oleh-Oleh Wonosobo. Seluruh hak cipta dilindungi.
             </p>
             <div className="flex items-center gap-4">
               <span>Dataran Tinggi Dieng, Jawa Tengah</span>

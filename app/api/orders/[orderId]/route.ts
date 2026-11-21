@@ -33,16 +33,23 @@ export async function PATCH(
 
     const { orderId } = await params;
     const body = await req.json();
-    const { order_status, delivery_status } = body as {
+    const { order_status, delivery_status, courier_id, courier_name, courier_phone } = body as {
       order_status?: OrderStatus;
       delivery_status?: string;
+      courier_id?: string;
+      courier_name?: string;
+      courier_phone?: string;
     };
 
+    const courierInfo = (courier_id || courier_name || courier_phone)
+      ? { courier_id, courier_name, courier_phone }
+      : undefined;
+
     // Mapping between order_status and delivery_status
-    // 1. received  <-> pending (Menunggu diproses toko)
-    // 2. cooking   <-> assigned (Mulai kemas & packing / Kurir ditugaskan bersiap)
-    // 3. ready     <-> picked_up (Kemas selesai / Kurir OTW pengantaran ke titik maps)
-    // 4. completed <-> delivered (Selesai / Pesanan telah tiba di tangan pembeli)
+    // 1. received  <-> pending (Belum dikirim / Menunggu diproses toko)
+    // 2. cooking   <-> assigned (Kemas packing / Kurir disiapkan)
+    // 3. ready     <-> picked_up (Sedang mengirim / Kurir OTW pengantaran ke titik maps)
+    // 4. completed <-> delivered (Selesai mengirim / Pesanan telah tiba di tangan pembeli)
 
     if (delivery_status) {
       const allowed = ["pending", "assigned", "picked_up", "delivered", "failed_attempt"];
@@ -59,7 +66,8 @@ export async function PATCH(
 
       let updated = await updateOrderDeliveryStatus(
         orderId,
-        delivery_status as NonNullable<import("@/types").Order["delivery_status"]>
+        delivery_status as NonNullable<import("@/types").Order["delivery_status"]>,
+        courierInfo
       );
 
       if (correspondingOrderStatus) {
@@ -69,6 +77,20 @@ export async function PATCH(
       if (!updated) {
         return NextResponse.json({ error: "Pesanan tidak ditemukan." }, { status: 404 });
       }
+      return NextResponse.json({ success: true, order: updated });
+    }
+
+    if (courierInfo) {
+      // Update courier info without changing delivery status if not provided
+      const currentOrder = await getOrderById(orderId);
+      if (!currentOrder) {
+        return NextResponse.json({ error: "Pesanan tidak ditemukan." }, { status: 404 });
+      }
+      const updated = await updateOrderDeliveryStatus(
+        orderId,
+        currentOrder.delivery_status || "pending",
+        courierInfo
+      );
       return NextResponse.json({ success: true, order: updated });
     }
 

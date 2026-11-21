@@ -38,21 +38,8 @@ import {
 } from "@/components/ui/FlaticonCompat";
 import Flaticon from "@/components/ui/Flaticon";
 import { KarikaProduct, INITIAL_KARIKA_PRODUCTS, KARIKA_CATEGORIES } from "@/lib/karika-products-data";
-
-interface Courier {
-  id: string;
-  name: string;
-  phone: string;
-  zone: string;
-}
-
-const DIENG_COURIERS: Courier[] = [
-  { id: "k1", name: "Kurir 1 - Slamet Dieng", phone: "083122046357", zone: "Dieng Kulon & Kompleks Candi" },
-  { id: "k2", name: "Kurir 2 - Wahyu Sikunir", phone: "081234567891", zone: "Sembungan & Puncak Sikunir" },
-  { id: "k3", name: "Kurir 3 - Budi Telaga", phone: "085678901234", zone: "Telaga Warna & Pengilon" },
-  { id: "k4", name: "Kurir 4 - Agus Prau", phone: "087812345678", zone: "Patakbanteng & Jalur Prau" },
-  { id: "k5", name: "Kurir 5 - Rian Kejajar", phone: "089612345678", zone: "Kejajar & Jalur Wonosobo" },
-];
+import { Courier } from "@/types";
+import { DEFAULT_COURIERS } from "@/lib/couriers";
 
 export default function AdminDashboardPage() {
   const {
@@ -64,7 +51,7 @@ export default function AdminDashboardPage() {
     playChime,
   } = useKitchenOrders();
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "kds" | "transactions" | "stock">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "kds" | "transactions" | "stock" | "settings">("dashboard");
   const [kdsFilter, setKdsFilter] = useState<"all" | "received" | "cooking" | "ready" | "completed" | "cancelled">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<Order | null>(null);
@@ -72,9 +59,37 @@ export default function AdminDashboardPage() {
   const [transactionStatusFilter, setTransactionStatusFilter] = useState<"all" | "settlement" | "failed">("all");
   const [selectedOrderForProof, setSelectedOrderForProof] = useState<Order | null>(null);
 
-  // Product modal & CRUD form state
+  // Settings State (Pengaturan Admin & Pembayaran)
+  const [settingsForm, setSettingsForm] = useState({
+    admin_whatsapp: "083122046357",
+    qris_image_url: "",
+    qris_merchant_name: "D OLEH - OLEH DIENG",
+  });
+  const [isSettingsLoading, setIsSettingsLoading] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsFeedback, setSettingsFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [selectedQrisFile, setSelectedQrisFile] = useState<File | null>(null);
+  const [qrisFilePreview, setQrisFilePreview] = useState<string>("");
+
+  // Couriers Management State
+  const [couriers, setCouriers] = useState<Courier[]>(DEFAULT_COURIERS);
+  const [isCourierModalOpen, setIsCourierModalOpen] = useState(false);
+  const [editingCourier, setEditingCourier] = useState<Courier | null>(null);
+  const [isSavingCourier, setIsSavingCourier] = useState(false);
+  const [courierForm, setCourierForm] = useState({
+    name: "",
+    phone: "",
+    zone: "Dieng Kulon & Kompleks Candi",
+    vehicle: "Sepeda Motor",
+  });
+
+  // Product modal & CRUD form state with Device Image Upload
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<KarikaProduct | null>(null);
+  const [selectedProductFile, setSelectedProductFile] = useState<File | null>(null);
+  const [productFilePreview, setProductFilePreview] = useState<string>("");
+  const [isUploadingProductFile, setIsUploadingProductFile] = useState(false);
+  const [productUploadError, setProductUploadError] = useState<string>("");
   const [productForm, setProductForm] = useState({
     name: "",
     group: "Carica" as "Carica" | "Makanan" | "Camilan" | "Minuman",
@@ -126,12 +141,125 @@ export default function AdminDashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch products for stock tab
+  // Fetch products for stock tab & settings
   useEffect(() => {
     if (activeTab === "stock") {
       loadCatalogStock();
     }
+    if (activeTab === "settings") {
+      loadSettings();
+    }
   }, [activeTab]);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    setIsSettingsLoading(true);
+    try {
+      const res = await fetch("/api/settings", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.settings) {
+          setSettingsForm({
+            admin_whatsapp: data.settings.admin_whatsapp || "",
+            qris_image_url: data.settings.qris_image_url || "",
+            qris_merchant_name: data.settings.qris_merchant_name || "D OLEH - OLEH DIENG",
+          });
+          setQrisFilePreview(data.settings.qris_image_url || "");
+          if (Array.isArray(data.settings.couriers) && data.settings.couriers.length > 0) {
+            setCouriers(data.settings.couriers);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load settings:", err);
+    } finally {
+      setIsSettingsLoading(false);
+    }
+  };
+
+  const handleQrisFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(file.type.toLowerCase())) {
+      alert("Format gambar tidak didukung. Gunakan file JPG, PNG, atau WebP.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`Ukuran gambar terlalu besar (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maksimal 5 MB.`);
+      return;
+    }
+
+    setSelectedQrisFile(file);
+    setQrisFilePreview(URL.createObjectURL(file));
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    setSettingsFeedback(null);
+
+    try {
+      let finalQrisUrl = settingsForm.qris_image_url;
+
+      // 1. Upload QR Code jika ada file baru yang dipilih dari perangkat
+      if (selectedQrisFile) {
+        const formData = new FormData();
+        formData.append("file", selectedQrisFile);
+        formData.append("folder", "settings");
+
+        const uploadRes = await fetch("/api/admin/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.success) {
+          throw new Error(uploadData.error || "Gagal mengunggah QR Code ke server");
+        }
+
+        finalQrisUrl = uploadData.url;
+      }
+
+      // 2. Simpan pengaturan ke backend
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          admin_whatsapp: settingsForm.admin_whatsapp,
+          qris_image_url: finalQrisUrl,
+          qris_merchant_name: settingsForm.qris_merchant_name,
+        }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok || !resData.success) {
+        throw new Error(resData.error || "Gagal menyimpan pengaturan");
+      }
+
+      setSettingsForm((prev) => ({
+        ...prev,
+        qris_image_url: finalQrisUrl,
+      }));
+      setSelectedQrisFile(null);
+      setSettingsFeedback({
+        type: "success",
+        text: "Pengaturan Admin & Pembayaran berhasil diperbarui!",
+      });
+    } catch (err: any) {
+      console.error("Save settings error:", err);
+      setSettingsFeedback({
+        type: "error",
+        text: err?.message || "Terjadi kesalahan saat menyimpan pengaturan.",
+      });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const loadCatalogStock = async () => {
     setIsStockLoading(true);
@@ -245,8 +373,8 @@ export default function AdminDashboardPage() {
       .map((item) => `- ${item.name} (${item.qty} paket)`)
       .join("\n");
 
-    const message = `*TUGAS PENGANTARAN OLEH-OLEH - DIOLEH - OLEH DIENG*
-Halo Mas/Mbak ${courier.name}, ada tugas pengantaran pesanan baru:
+    const message = `*TUGAS PENGANTARAN OLEH-OLEH - D OLEH - OLEH DIENG*
+Halo Mas/Mbak ${courier.name}, ada tugas pengantaran pesanan:
 
 *DETAIL PESANAN:*
 - No. Order: #${order.order_number}
@@ -259,7 +387,7 @@ Halo Mas/Mbak ${courier.name}, ada tugas pengantaran pesanan baru:
     }
 
 *RUTE & ALAMAT PENGANTARAN:*
-- Titik Asal: Sentra Dioleh - oleh Dieng (Titik 0 Km)
+- Titik Asal: Sentra D OLEH - OLEH (Titik 0 Km Dieng)
 - Patokan Alamat: ${order.delivery_address || "Kawasan Dataran Tinggi Dieng"}
 - Estimasi Jarak: ~${order.delivery_distance_km ?? 8} km
 - Link Rute Google Maps:
@@ -268,10 +396,182 @@ ${gmapsUrl}
 *RINCIAN PAKET OLEH-OLEH:*
 ${itemsText}
 
-Mohon kurir segera ambil paket di sentra Dioleh - oleh Dieng dan meluncur ke lokasi pembeli. Hubungi pembeli jika sudah dekat lokasi. Terima kasih!`;
+Mohon kurir segera ambil paket di sentra D OLEH - OLEH dan meluncur ke lokasi pembeli. Hubungi pembeli jika sudah dekat lokasi. Terima kasih!`;
 
     const cleanPhone = courier.phone.replace(/\D/g, "").replace(/^0/, "62");
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+  };
+
+  // Assign courier to order and persist to backend
+  const handleAssignCourier = async (orderId: string, courierOrId: Courier | string) => {
+    const courierObj: Courier | undefined =
+      typeof courierOrId === "string"
+        ? (couriers.find((c) => c.id === courierOrId) ||
+           DEFAULT_COURIERS.find((c) => c.id === courierOrId))
+        : courierOrId;
+
+    if (!courierObj) return;
+
+    setSelectedCouriers((prev) => ({ ...prev, [orderId]: courierObj.id }));
+    try {
+      await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courier_id: courierObj.id,
+          courier_name: courierObj.name,
+          courier_phone: courierObj.phone,
+        }),
+      });
+      if (selectedOrderDetail && selectedOrderDetail.id === orderId) {
+        setSelectedOrderDetail((prev) =>
+          prev
+            ? {
+                ...prev,
+                courier_id: courierObj.id,
+                courier_name: courierObj.name,
+                courier_phone: courierObj.phone,
+              }
+            : null
+        );
+      }
+    } catch (e) {
+      console.error("Assign courier error:", e);
+    }
+  };
+
+  // Update delivery status: "pending" (Belum Dikirim), "picked_up" (Sedang Mengirim), "delivered" (Selesai Mengirim)
+  const handleUpdateDeliveryStatus = async (
+    orderId: string,
+    deliveryStatus: "pending" | "picked_up" | "delivered"
+  ) => {
+    try {
+      const activeCourierId = selectedCouriers[orderId];
+      const activeCourier = couriers.find((c) => c.id === activeCourierId) || couriers[0];
+
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          delivery_status: deliveryStatus,
+          ...(activeCourier
+            ? {
+                courier_id: activeCourier.id,
+                courier_name: activeCourier.name,
+                courier_phone: activeCourier.phone,
+              }
+            : {}),
+        }),
+      });
+
+      if (res.ok) {
+        if (soundEnabled) playChime();
+        if (selectedOrderDetail && selectedOrderDetail.id === orderId) {
+          setSelectedOrderDetail((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  delivery_status: deliveryStatus,
+                  ...(activeCourier
+                    ? {
+                        courier_id: activeCourier.id,
+                        courier_name: activeCourier.name,
+                        courier_phone: activeCourier.phone,
+                      }
+                    : {}),
+                }
+              : null
+          );
+        }
+      }
+    } catch (e) {
+      console.error("Update delivery status error:", e);
+    }
+  };
+
+  // CRUD Handlers for Couriers
+  const handleOpenAddCourier = () => {
+    setEditingCourier(null);
+    setCourierForm({
+      name: "",
+      phone: "",
+      zone: "Dieng Kulon & Kompleks Candi",
+      vehicle: "Sepeda Motor",
+    });
+    setIsCourierModalOpen(true);
+  };
+
+  const handleOpenEditCourier = (c: Courier) => {
+    setEditingCourier(c);
+    setCourierForm({
+      name: c.name,
+      phone: c.phone,
+      zone: c.zone || "Area 0-8 Km Dieng",
+      vehicle: c.vehicle || "Sepeda Motor",
+    });
+    setIsCourierModalOpen(true);
+  };
+
+  const handleSaveCourier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courierForm.name.trim() || !courierForm.phone.trim()) {
+      alert("Nama dan nomor WhatsApp kurir wajib diisi.");
+      return;
+    }
+    setIsSavingCourier(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "save_courier",
+          courier: {
+            id: editingCourier ? editingCourier.id : undefined,
+            name: courierForm.name.trim(),
+            phone: courierForm.phone.trim(),
+            zone: courierForm.zone.trim(),
+            vehicle: courierForm.vehicle.trim(),
+            is_active: true,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCouriers(data.couriers);
+        setIsCourierModalOpen(false);
+        setEditingCourier(null);
+        alert(editingCourier ? "Data kurir berhasil diperbarui!" : "Kurir baru berhasil ditambahkan!");
+      } else {
+        alert(data.error || "Gagal menyimpan kurir.");
+      }
+    } catch (err: any) {
+      alert(err?.message || "Terjadi kesalahan saat menyimpan kurir.");
+    } finally {
+      setIsSavingCourier(false);
+    }
+  };
+
+  const handleDeleteCourier = async (courierId: string, courierName: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus kurir "${courierName}" dari daftar tim kurir toko?`)) return;
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_courier",
+          courierId,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCouriers(data.couriers);
+        alert(`Kurir "${courierName}" berhasil dihapus.`);
+      } else {
+        alert(data.error || "Gagal menghapus kurir.");
+      }
+    } catch (err: any) {
+      alert(err?.message || "Terjadi kesalahan saat menghapus kurir.");
+    }
   };
 
   // Generate WhatsApp Official Receipt link for Buyer
@@ -422,9 +722,12 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
     }
   };
 
-  // Product CRUD Form Handlers
+  // Product CRUD Form Handlers with Device Image Upload
   const handleOpenAddProduct = () => {
     setEditingProduct(null);
+    setSelectedProductFile(null);
+    setProductFilePreview("");
+    setProductUploadError("");
     setProductForm({
       name: "",
       group: "Carica",
@@ -440,6 +743,9 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
   const handleOpenEditProduct = (prod: KarikaProduct) => {
     setEditingProduct(prod);
+    setSelectedProductFile(null);
+    setProductFilePreview(prod.image || "");
+    setProductUploadError("");
     setProductForm({
       name: prod.name,
       group: prod.group,
@@ -453,6 +759,28 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
     setIsAddProductOpen(true);
   };
 
+  const handleProductFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setProductUploadError("");
+
+    // Validasi jenis file
+    if (!["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(file.type.toLowerCase())) {
+      setProductUploadError("Format file tidak didukung. Harap pilih gambar JPG, PNG, atau WebP.");
+      return;
+    }
+
+    // Validasi ukuran file (maksimal 5 MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setProductUploadError(`Ukuran file terlalu besar (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maksimal 5 MB.`);
+      return;
+    }
+
+    setSelectedProductFile(file);
+    setProductFilePreview(URL.createObjectURL(file));
+  };
+
   const handleSubmitProductForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!productForm.name || Number(productForm.price) <= 0) {
@@ -460,7 +788,32 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
       return;
     }
 
+    setIsUploadingProductFile(true);
+    setProductUploadError("");
+
     try {
+      let finalImageUrl = productForm.image || "/images/hero-dieng.jpg";
+
+      // 1. Jika ada gambar baru yang dipilih dari perangkat, upload dulu ke server
+      if (selectedProductFile) {
+        const formData = new FormData();
+        formData.append("file", selectedProductFile);
+        formData.append("folder", "products");
+
+        const uploadRes = await fetch("/api/admin/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.success) {
+          throw new Error(uploadData.error || "Gagal mengunggah foto produk ke server");
+        }
+
+        finalImageUrl = uploadData.url;
+      }
+
+      // 2. Simpan produk ke database
       if (editingProduct) {
         // Edit existing product
         const res = await fetch("/api/products", {
@@ -469,14 +822,20 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
           body: JSON.stringify({
             id: editingProduct.id,
             ...productForm,
+            image: finalImageUrl,
           }),
         });
-        if (res.ok) {
+
+        const data = await res.json();
+        if (res.ok && data.success) {
           await loadCatalogStock();
           setIsAddProductOpen(false);
           setEditingProduct(null);
+          setSelectedProductFile(null);
+          setProductFilePreview("");
+          alert(`Produk "${productForm.name}" berhasil diperbarui!`);
         } else {
-          alert("Gagal memperbarui produk.");
+          alert(data.error || "Gagal memperbarui produk.");
         }
       } else {
         // Add new product
@@ -486,34 +845,46 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
           body: JSON.stringify({
             action: "create",
             ...productForm,
+            image: finalImageUrl,
           }),
         });
-        if (res.ok) {
+
+        const data = await res.json();
+        if (res.ok && data.success) {
           await loadCatalogStock();
           setIsAddProductOpen(false);
+          setSelectedProductFile(null);
+          setProductFilePreview("");
+          alert(`Produk "${productForm.name}" berhasil ditambahkan ke katalog!`);
         } else {
-          alert("Gagal menambahkan produk baru.");
+          alert(data.error || "Gagal menambahkan produk baru.");
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Save product error:", err);
-      alert("Terjadi kesalahan saat menyimpan produk.");
+      setProductUploadError(err?.message || "Terjadi kesalahan saat menyimpan produk.");
+      alert(err?.message || "Terjadi kesalahan saat menyimpan produk.");
+    } finally {
+      setIsUploadingProductFile(false);
     }
   };
 
   const handleDeleteProduct = async (id: string, name: string) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus produk "${name}" dari katalog?`)) return;
+    if (!confirm(`Apakah Anda yakin ingin menghapus produk "${name}" dari katalog D OLEH - OLEH? Tindakan ini permanen.`)) return;
     try {
       const res = await fetch(`/api/products?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         setProducts((prev) => prev.filter((p) => p.id !== id));
+        alert(`Produk "${name}" berhasil dihapus dari katalog.`);
       } else {
-        alert("Gagal menghapus produk.");
+        alert(data.error || "Gagal menghapus produk.");
       }
     } catch (err) {
       console.error("Delete product error:", err);
+      alert("Terjadi kesalahan saat menghapus produk.");
     }
   };
 
@@ -931,14 +1302,14 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
             <Link
               href="/"
               className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#292a23] to-[#454639] text-[#f4ce00] shadow-md shadow-black/10 hover:opacity-95 transition"
-              title="Dioleh - oleh Dieng — Beranda"
+              title="D OLEH - OLEH — Beranda"
             >
               <BrandLogoIcon size={24} color="#f4ce00" />
             </Link>
             <div className="min-w-0 hidden sm:block">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <h1 className="text-sm sm:text-lg font-black tracking-tight text-[#24251f] truncate">
-                  DIOLEH - OLEH DIENG • ADMIN OPERASIONAL
+                  D OLEH - OLEH • ADMIN OPERASIONAL
                 </h1>
                 <span className="inline-flex rounded-full bg-[#f4ce00]/20 px-2.5 py-0.5 text-[10px] font-black text-[#857200] border border-[#f4ce00]/40 shrink-0">
                   DIENG WONOSOBO
@@ -1161,10 +1532,22 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                 {products.length}
               </span>
             </button>
+
+            <button
+              onClick={() => setActiveTab("settings")}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
+                activeTab === "settings"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              <Flaticon name="settings" className="text-xs" />
+              <span>Pengaturan Admin &amp; Pembayaran</span>
+            </button>
           </div>
 
           {/* Search Box */}
-          {activeTab !== "stock" && (
+          {activeTab !== "stock" && activeTab !== "settings" && (
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
               <input
@@ -1450,53 +1833,142 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                           </div>
                         ) : (
                           <>
-                            {/* Selector 5 Kurir WhatsApp Dieng */}
-                            <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-2.5 text-xs space-y-1.5">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-sky-900 flex items-center gap-1">
-                                  <span>🛵</span>
-                                  <span>Pilih Kurir Dieng:</span>
-                                </span>
-                                <span className="text-[10px] font-bold text-sky-700 bg-white border border-sky-200 px-1.5 py-0.5 rounded">
-                                  5 Nomor Siap Antar
-                                </span>
-                              </div>
+                            {/* Selector Kurir Terintegrasi & 3 Status Pengantaran */}
+                            {(() => {
+                              const activeCourierList = couriers.length > 0 ? couriers : DEFAULT_COURIERS;
+                              const currentSelectedCourierId =
+                                order.courier_id ||
+                                selectedCouriers[order.id] ||
+                                activeCourierList[0]?.id ||
+                                "k1";
+                              const activeCourier =
+                                activeCourierList.find((c) => c.id === currentSelectedCourierId) ||
+                                activeCourierList[0];
 
-                              <div className="flex items-center gap-1.5">
-                                <select
-                                  value={selectedCouriers[order.id] || "k1"}
-                                  onChange={(e) =>
-                                    setSelectedCouriers({
-                                      ...selectedCouriers,
-                                      [order.id]: e.target.value,
-                                    })
-                                  }
-                                  className="w-full text-[11px] font-semibold bg-white border border-sky-300 rounded-lg p-1.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                                >
-                                  {DIENG_COURIERS.map((c) => (
-                                    <option key={c.id} value={c.id}>
-                                      {c.name} ({c.phone}) - {c.zone}
-                                    </option>
-                                  ))}
-                                </select>
+                              // Normalisasi 3 Status Pengantaran
+                              const currentDelivery =
+                                order.delivery_status === "delivered" || order.order_status === "completed"
+                                  ? "delivered"
+                                  : order.delivery_status === "picked_up" || order.order_status === "ready"
+                                  ? "picked_up"
+                                  : "pending";
 
-                                <a
-                                  href={getAssignCourierWhatsAppUrl(
-                                    order,
-                                    DIENG_COURIERS.find(
-                                      (c) => c.id === (selectedCouriers[order.id] || "k1")
-                                    ) || DIENG_COURIERS[0]
-                                  )}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="shrink-0 bg-sky-600 hover:bg-sky-700 text-white font-bold p-1.5 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 transition shadow-xs"
-                                  title="Kirim Penugasan & Link Google Maps ke WhatsApp Kurir"
-                                >
-                                  <Flaticon name="whatsapp" variant="brands" className="text-xs" />
-                                  <span>Kirim Kurir</span>
-                                </a>
-                              </div>
-                            </div>
+                              return (
+                                <div className="space-y-2 rounded-2xl border border-sky-200 bg-sky-50/70 p-3 text-xs">
+                                  {/* Header Kurir */}
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-extrabold text-sky-950 flex items-center gap-1.5">
+                                      <span>🛵</span>
+                                      <span>Kurir Pengantar Dieng:</span>
+                                    </span>
+                                    <span className="text-[10px] font-extrabold text-sky-700 bg-white border border-sky-200 px-2 py-0.5 rounded-full">
+                                      {activeCourierList.length} Kurir Aktif
+                                    </span>
+                                  </div>
+
+                                  {/* Dropdown Kurir + Tombol Kirim WA Tugas */}
+                                  <div className="flex items-center gap-1.5">
+                                    <select
+                                      value={currentSelectedCourierId}
+                                      onChange={(e) => {
+                                        const newCourierId = e.target.value;
+                                        setSelectedCouriers({
+                                          ...selectedCouriers,
+                                          [order.id]: newCourierId,
+                                        });
+                                        handleAssignCourier(order.id, newCourierId);
+                                      }}
+                                      className="w-full text-xs font-semibold bg-white border border-sky-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500 shadow-2xs"
+                                    >
+                                      {activeCourierList.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                          {c.name} ({c.phone}) - {c.zone || "Area Dieng"}
+                                        </option>
+                                      ))}
+                                    </select>
+
+                                    {activeCourier && (
+                                      <a
+                                        href={getAssignCourierWhatsAppUrl(order, activeCourier)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="shrink-0 bg-sky-600 hover:bg-sky-700 text-white font-bold p-2 px-3 rounded-xl text-xs inline-flex items-center gap-1 transition shadow-xs"
+                                        title="Kirim rute pesanan dan link Google Maps ke WhatsApp Kurir"
+                                      >
+                                        <Flaticon name="whatsapp" variant="brands" className="text-xs" />
+                                        <span>Tugaskan</span>
+                                      </a>
+                                    )}
+                                  </div>
+
+                                  {/* 3 Status Pengantaran Terintegrasi */}
+                                  <div className="pt-2 border-t border-sky-200/80 space-y-1.5">
+                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                                      <span>Status Pengantaran:</span>
+                                      <span
+                                        className={`font-black ${
+                                          currentDelivery === "delivered"
+                                            ? "text-emerald-700"
+                                            : currentDelivery === "picked_up"
+                                            ? "text-sky-700"
+                                            : "text-amber-700"
+                                        }`}
+                                      >
+                                        {currentDelivery === "delivered"
+                                          ? "✓ Selesai Mengirim"
+                                          : currentDelivery === "picked_up"
+                                          ? "🛵 Sedang Mengirim"
+                                          : "⏳ Belum Dikirim"}
+                                      </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateDeliveryStatus(order.id, "pending")}
+                                        className={`py-1.5 px-1 rounded-xl text-[10px] font-extrabold transition-all text-center flex flex-col items-center justify-center ${
+                                          currentDelivery === "pending"
+                                            ? "bg-amber-500 text-white shadow-xs ring-2 ring-amber-300"
+                                            : "bg-white text-slate-600 hover:bg-amber-50 hover:text-amber-800 border border-slate-200"
+                                        }`}
+                                        title="Set status pesanan Belum Dikirim"
+                                      >
+                                        <span>Belum</span>
+                                        <span className="text-[9px] opacity-90">Dikirim</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateDeliveryStatus(order.id, "picked_up")}
+                                        className={`py-1.5 px-1 rounded-xl text-[10px] font-extrabold transition-all text-center flex flex-col items-center justify-center ${
+                                          currentDelivery === "picked_up"
+                                            ? "bg-sky-600 text-white shadow-xs ring-2 ring-sky-300"
+                                            : "bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-800 border border-slate-200"
+                                        }`}
+                                        title="Set status kurir Sedang Mengirim"
+                                      >
+                                        <span>Sedang</span>
+                                        <span className="text-[9px] opacity-90">Mengirim</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateDeliveryStatus(order.id, "delivered")}
+                                        className={`py-1.5 px-1 rounded-xl text-[10px] font-extrabold transition-all text-center flex flex-col items-center justify-center ${
+                                          currentDelivery === "delivered"
+                                            ? "bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-300"
+                                            : "bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200"
+                                        }`}
+                                        title="Set status pesanan Selesai Mengirim (Tiba)"
+                                      >
+                                        <span>Selesai</span>
+                                        <span className="text-[9px] opacity-90">Mengirim</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             <div className="flex justify-between items-center text-xs pt-1">
                               <span className="font-medium text-slate-500">Total Tagihan:</span>
@@ -2252,6 +2724,346 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
           </div>
         )}
 
+        {/* TAB PENGATURAN ADMIN & PEMBAYARAN */}
+        {activeTab === "settings" && (
+          <div className="space-y-6">
+            {/* Header Settings */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 border border-amber-500/20 shadow-xs">
+                  <Flaticon name="settings" className="text-xl" />
+                </span>
+                <div>
+                  <h2 className="text-base sm:text-lg font-black tracking-tight text-slate-900">
+                    Pengaturan Admin &amp; Pembayaran Toko
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Kelola kontak WhatsApp layanan pelanggan dan unggah QR Code pembayaran QRIS resmi D OLEH - OLEH
+                  </p>
+                </div>
+              </div>
+
+              {settingsFeedback && (
+                <div
+                  className={`text-xs px-3.5 py-2 rounded-xl font-bold flex items-center gap-2 ${
+                    settingsFeedback.type === "success"
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-rose-50 text-rose-800 border border-rose-200"
+                  }`}
+                >
+                  <Flaticon
+                    name={settingsFeedback.type === "success" ? "check-circle" : "cross-circle"}
+                    className="text-xs"
+                  />
+                  <span>{settingsFeedback.text}</span>
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleSaveSettings} className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Panel 1: Kontak WhatsApp Admin */}
+                <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-2xs space-y-4">
+                  <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                      <Flaticon name="whatsapp" variant="brands" className="text-base" />
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900">
+                        Nomor WhatsApp Admin
+                      </h3>
+                      <p className="text-[11px] text-slate-400">
+                        Digunakan untuk tombol &quot;CHAT ADMIN&quot; dan konfirmasi pesanan
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">
+                      Nomor HP / WhatsApp Toko <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Contoh: 08123456789 atau 628123456789"
+                        value={settingsForm.admin_whatsapp}
+                        onChange={(e) =>
+                          setSettingsForm({ ...settingsForm, admin_whatsapp: e.target.value })
+                        }
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Format otomatis dikonversi ke format internasional (misal 0812... menjadi 62812...).
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                      Tes Tautan WhatsApp Aktif:
+                    </span>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-mono text-xs text-emerald-950 font-bold">
+                        {settingsForm.admin_whatsapp
+                          ? `wa.me/${settingsForm.admin_whatsapp.replace(/\D/g, "").replace(/^0/, "62")}`
+                          : "Belum disetel"}
+                      </span>
+                      {settingsForm.admin_whatsapp && (
+                        <a
+                          href={`https://wa.me/${settingsForm.admin_whatsapp.replace(/\D/g, "").replace(/^0/, "62")}?text=${encodeURIComponent("Halo Admin D OLEH - OLEH Dieng, saya ingin bertanya.")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-xs"
+                        >
+                          <Flaticon name="whatsapp" variant="brands" className="text-xs" />
+                          <span>Buka Chat WA</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Panel 2: Unggah & Kelola QR Code QRIS */}
+                <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-2xs space-y-4">
+                  <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                      <QrCode className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900">
+                        QR Code Pembayaran Toko (QRIS)
+                      </h3>
+                      <p className="text-[11px] text-slate-400">
+                        Ditampilkan langsung saat pembeli memilih pembayaran QRIS
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">
+                      Nama Merchant QRIS
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: D OLEH - OLEH DIENG"
+                      value={settingsForm.qris_merchant_name}
+                      onChange={(e) =>
+                        setSettingsForm({ ...settingsForm, qris_merchant_name: e.target.value })
+                      }
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Area Upload File dari Perangkat */}
+                  <div className="space-y-2">
+                    <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px] block">
+                      Pilih Gambar QR Code dari Perangkat (Desktop / Galeri HP)
+                    </label>
+                    
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition">
+                      {/* Preview Box */}
+                      <div className="h-28 w-28 shrink-0 rounded-2xl overflow-hidden border border-slate-200 bg-white p-1 flex items-center justify-center shadow-xs">
+                        <img
+                          src={qrisFilePreview || settingsForm.qris_image_url || "/images/qris-karika.jpg"}
+                          alt="QRIS Preview"
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+
+                      <div className="space-y-2 text-center sm:text-left flex-1 min-w-0">
+                        <input
+                          type="file"
+                          id="qris-file-input"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleQrisFileChange}
+                          className="hidden"
+                        />
+                        <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                          <label
+                            htmlFor="qris-file-input"
+                            className="cursor-pointer bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-xs"
+                          >
+                            <Flaticon name="upload" className="text-xs" />
+                            <span>Pilih Gambar QR</span>
+                          </label>
+
+                          {selectedQrisFile && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedQrisFile(null);
+                                setQrisFilePreview(settingsForm.qris_image_url || "");
+                              }}
+                              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition"
+                            >
+                              Batal Pilihan
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-500">
+                          Format didukung: JPG, PNG, WebP (Maksimal 5MB).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Save Bar */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="text-xs text-slate-500">
+                  <span className="font-bold text-slate-800">Catatan:</span> Perubahan nomor WhatsApp dan QRIS akan langsung aktif di landing page pembeli.
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSavingSettings}
+                  className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-extrabold px-6 py-3 rounded-2xl text-xs inline-flex items-center justify-center gap-2 transition shadow-md shadow-amber-600/20"
+                >
+                  {isSavingSettings ? (
+                    <>
+                      <Flaticon name="spinner" className="text-xs animate-spin" />
+                      <span>Menyimpan Pengaturan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Flaticon name="check-circle" className="text-xs" />
+                      <span>Simpan Perubahan Pengaturan</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {/* SECTION MANAJEMEN TIM KURIR PENGANTARAN (CRUD KURIR) */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-2xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 border border-sky-500/20 shadow-xs text-xl">
+                    🛵
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900">
+                        Manajemen Tim Kurir Pengantaran Dieng
+                      </h3>
+                      <span className="bg-sky-100 text-sky-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-sky-200">
+                        {couriers.length} Kurir Terdaftar
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Kelola daftar kurir, nomor WhatsApp, dan armada yang terintegrasi langsung dengan pilihan penugasan pada kartu Pesanan Aktif (KDS).
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenAddCourier}
+                  className="bg-sky-600 hover:bg-sky-700 text-white font-extrabold px-4 py-2.5 rounded-2xl text-xs inline-flex items-center justify-center gap-2 transition shadow-xs self-start sm:self-auto shrink-0"
+                >
+                  <Flaticon name="plus" className="text-xs" />
+                  <span>+ Tambah Kurir Baru</span>
+                </button>
+              </div>
+
+              {/* Grid Card Kurir */}
+              {couriers.length === 0 ? (
+                <div className="text-center py-10 border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                  <p className="text-slate-500 text-xs font-semibold">Belum ada data kurir.</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddCourier}
+                    className="mt-3 text-sky-600 font-bold text-xs hover:underline"
+                  >
+                    + Klik di sini untuk menambahkan kurir pertama
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {couriers.map((c, index) => {
+                    const cleanPhone = c.phone.replace(/\D/g, "").replace(/^0/, "62");
+                    return (
+                      <div
+                        key={c.id || `courier-${index}`}
+                        className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4 hover:border-sky-300 hover:bg-sky-50/20 transition-all flex flex-col justify-between space-y-3"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200 text-base shadow-2xs">
+                              🛵
+                            </span>
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-black text-slate-900 truncate">
+                                {c.name}
+                              </h4>
+                              <p className="text-[11px] font-mono text-slate-600 flex items-center gap-1 font-semibold">
+                                <Flaticon name="whatsapp" variant="brands" className="text-emerald-600 text-xs" />
+                                <span>{c.phone}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <span className="shrink-0 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
+                            {c.vehicle || "Motor"}
+                          </span>
+                        </div>
+
+                        <div className="rounded-xl bg-white border border-slate-200/80 p-2.5 text-[11px] text-slate-600 space-y-1">
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase">
+                            <span>Wilayah Antar:</span>
+                            <span className="text-emerald-700 font-extrabold">Siap Antar</span>
+                          </div>
+                          <p className="font-semibold text-slate-800 truncate">
+                            📍 {c.zone || "Area Dieng Kulon & Kompleks Candi"}
+                          </p>
+                        </div>
+
+                        {/* Aksi Kurir: Chat WA, Edit, Hapus */}
+                        <div className="flex items-center gap-2 pt-1 border-t border-slate-200/70">
+                          {cleanPhone && (
+                            <a
+                              href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+                                `Halo Mas ${c.name}, koordinasi pengantaran pesanan D OLEH - OLEH Dieng.`
+                              )}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold py-1.5 px-2 rounded-xl text-[11px] inline-flex items-center justify-center gap-1 transition"
+                              title="Chat WhatsApp Kurir"
+                            >
+                              <Flaticon name="whatsapp" variant="brands" className="text-xs text-emerald-600" />
+                              <span>Chat WA</span>
+                            </a>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditCourier(c)}
+                            className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold py-1.5 px-2.5 rounded-xl text-[11px] inline-flex items-center justify-center gap-1 transition"
+                            title="Edit Data Kurir"
+                          >
+                            <Flaticon name="pencil" className="text-[10px]" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCourier(c.id, c.name)}
+                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-1.5 px-2 rounded-xl text-[11px] inline-flex items-center justify-center transition"
+                            title="Hapus Kurir"
+                          >
+                            <Flaticon name="trash" className="text-[10px]" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* POP UP MODAL INFORMASI SEPUTAR PESANAN LENGKAP */}
         {selectedOrderDetail && (
           <div
@@ -2411,50 +3223,157 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   </div>
                 </div>
 
-                {/* Pilihan 5 Kurir WhatsApp */}
-                <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-sky-900 text-xs flex items-center gap-1.5">
-                      <span>🛵</span>
-                      <span>Penugasan Kurir Pengantar (WhatsApp):</span>
-                    </span>
-                    <span className="text-[10px] font-bold text-sky-700 bg-white border border-sky-200 px-2 py-0.5 rounded-full">
-                      5 Nomor Tersedia
-                    </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <select
-                      value={selectedCouriers[selectedOrderDetail.id] || "k1"}
-                      onChange={(e) =>
-                        setSelectedCouriers({
-                          ...selectedCouriers,
-                          [selectedOrderDetail.id]: e.target.value,
-                        })
-                      }
-                      className="w-full text-xs font-semibold bg-white border border-sky-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                    >
-                      {DIENG_COURIERS.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.phone}) - {c.zone}
-                        </option>
-                      ))}
-                    </select>
-                    <a
-                      href={getAssignCourierWhatsAppUrl(
-                        selectedOrderDetail,
-                        DIENG_COURIERS.find(
-                          (c) => c.id === (selectedCouriers[selectedOrderDetail.id] || "k1")
-                        ) || DIENG_COURIERS[0]
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-2 rounded-xl text-xs inline-flex items-center justify-center gap-1.5 transition shadow-xs shrink-0"
-                    >
-                      <Flaticon name="whatsapp" variant="brands" className="text-xs" />
-                      <span>Kirim Tugas ke Kurir</span>
-                    </a>
-                  </div>
-                </div>
+                {/* Penugasan Kurir Terintegrasi & 3 Status Pengantaran di Modal Detail */}
+                {(() => {
+                  const activeCourierList = couriers.length > 0 ? couriers : DEFAULT_COURIERS;
+                  const currentSelectedCourierId =
+                    selectedOrderDetail.courier_id ||
+                    selectedCouriers[selectedOrderDetail.id] ||
+                    activeCourierList[0]?.id ||
+                    "k1";
+                  const activeCourier =
+                    activeCourierList.find((c) => c.id === currentSelectedCourierId) ||
+                    activeCourierList[0];
+
+                  const currentDelivery =
+                    selectedOrderDetail.delivery_status === "delivered" ||
+                    selectedOrderDetail.order_status === "completed"
+                      ? "delivered"
+                      : selectedOrderDetail.delivery_status === "picked_up" ||
+                        selectedOrderDetail.order_status === "ready"
+                      ? "picked_up"
+                      : "pending";
+
+                  return (
+                    <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-sky-950 text-xs flex items-center gap-1.5">
+                          <span>🛵</span>
+                          <span>Penugasan Kurir Pengantar (WhatsApp):</span>
+                        </span>
+                        <span className="text-[10px] font-extrabold text-sky-700 bg-white border border-sky-200 px-2.5 py-0.5 rounded-full">
+                          {activeCourierList.length} Kurir Siap
+                        </span>
+                      </div>
+
+                      {/* Dropdown Kurir + Tombol Tugas WhatsApp */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <select
+                          value={currentSelectedCourierId}
+                          onChange={(e) => {
+                            const newCourierId = e.target.value;
+                            setSelectedCouriers({
+                              ...selectedCouriers,
+                              [selectedOrderDetail.id]: newCourierId,
+                            });
+                            handleAssignCourier(selectedOrderDetail.id, newCourierId);
+                          }}
+                          className="w-full text-xs font-semibold bg-white border border-sky-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500 shadow-2xs"
+                        >
+                          {activeCourierList.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} ({c.phone}) - {c.zone || "Area Dieng"}
+                            </option>
+                          ))}
+                        </select>
+
+                        {activeCourier && (
+                          <a
+                            href={getAssignCourierWhatsAppUrl(selectedOrderDetail, activeCourier)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs inline-flex items-center justify-center gap-1.5 transition shadow-xs shrink-0"
+                            title="Kirim rute Maps dan detail belanjaan ke WhatsApp Kurir"
+                          >
+                            <Flaticon name="whatsapp" variant="brands" className="text-xs" />
+                            <span>Kirim Tugas ke Kurir</span>
+                          </a>
+                        )}
+                      </div>
+
+                      {/* 3 Status Pengantaran Terintegrasi */}
+                      <div className="pt-2 border-t border-sky-200/80 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                          <span>Status Pengantaran:</span>
+                          <span
+                            className={`font-black text-xs ${
+                              currentDelivery === "delivered"
+                                ? "text-emerald-700"
+                                : currentDelivery === "picked_up"
+                                ? "text-sky-700"
+                                : "text-amber-700"
+                            }`}
+                          >
+                            {currentDelivery === "delivered"
+                              ? "✓ Selesai Mengirim (Tiba)"
+                              : currentDelivery === "picked_up"
+                              ? "🛵 Sedang Mengirim (Kurir OTW)"
+                              : "⏳ Belum Dikirim (Disiapkan)"}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await handleUpdateDeliveryStatus(selectedOrderDetail.id, "pending");
+                              setSelectedOrderDetail({
+                                ...selectedOrderDetail,
+                                delivery_status: "pending",
+                              });
+                            }}
+                            className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all text-center flex flex-col items-center justify-center ${
+                              currentDelivery === "pending"
+                                ? "bg-amber-500 text-white shadow-xs ring-2 ring-amber-300"
+                                : "bg-white text-slate-700 hover:bg-amber-50 hover:text-amber-900 border border-slate-200"
+                            }`}
+                          >
+                            <span>Belum Dikirim</span>
+                            <span className="text-[10px] opacity-80 font-normal">Disiapkan</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await handleUpdateDeliveryStatus(selectedOrderDetail.id, "picked_up");
+                              setSelectedOrderDetail({
+                                ...selectedOrderDetail,
+                                delivery_status: "picked_up",
+                              });
+                            }}
+                            className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all text-center flex flex-col items-center justify-center ${
+                              currentDelivery === "picked_up"
+                                ? "bg-sky-600 text-white shadow-xs ring-2 ring-sky-300"
+                                : "bg-white text-slate-700 hover:bg-sky-50 hover:text-sky-900 border border-slate-200"
+                            }`}
+                          >
+                            <span>Sedang Mengirim</span>
+                            <span className="text-[10px] opacity-80 font-normal">Kurir OTW</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await handleUpdateDeliveryStatus(selectedOrderDetail.id, "delivered");
+                              setSelectedOrderDetail({
+                                ...selectedOrderDetail,
+                                delivery_status: "delivered",
+                              });
+                            }}
+                            className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all text-center flex flex-col items-center justify-center ${
+                              currentDelivery === "delivered"
+                                ? "bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-300"
+                                : "bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200"
+                            }`}
+                          >
+                            <span>Selesai Mengirim</span>
+                            <span className="text-[10px] opacity-80 font-normal">Sudah Sampai</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Modal Action Footer */}
@@ -2545,7 +3464,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       {editingProduct ? "Edit Informasi Produk" : "Tambah Produk Baru"}
                     </h3>
                     <p className="text-[11px] text-[#dedad0]">
-                      Katalog Dioleh - oleh Dieng Wonosobo
+                      Katalog D OLEH - OLEH Dieng Wonosobo
                     </p>
                   </div>
                 </div>
@@ -2660,53 +3579,128 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   </div>
                 </div>
 
-                {/* Field 4: Foto Produk dengan Opsi Preset Cepat */}
-                <div className="space-y-2">
-                  <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
-                    URL / Path Foto Produk
-                  </label>
-                  <div className="flex items-center gap-2">
+                {/* Field 4: Foto Produk (Upload dari Perangkat & Preview) */}
+                <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
+                      Foto Produk (Dari HP / Laptop) <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400">JPG, PNG, WebP (Maks. 5MB)</span>
+                  </div>
+
+                  {/* Area Pilih File & Preview */}
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <div className="h-20 w-20 shrink-0 rounded-2xl overflow-hidden border border-slate-200 bg-white p-1 flex items-center justify-center shadow-xs">
+                      {productFilePreview || productForm.image ? (
+                        <img
+                          src={productFilePreview || productForm.image}
+                          alt="Preview Produk"
+                          className="h-full w-full object-cover rounded-xl"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-slate-300">
+                          <Flaticon name="image" className="text-xl" />
+                          <span className="text-[9px] mt-0.5">Belum ada</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 flex-1 min-w-0 text-center sm:text-left">
+                      <input
+                        type="file"
+                        id="product-file-input"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleProductFileChange}
+                        className="hidden"
+                      />
+                      <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                        <label
+                          htmlFor="product-file-input"
+                          className="cursor-pointer bg-[#292a23] hover:bg-black text-[#f4ce00] font-bold px-3 py-1.5 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-xs"
+                        >
+                          <Flaticon name="upload" className="text-xs" />
+                          <span>Pilih Foto dari Galeri / File</span>
+                        </label>
+
+                        {selectedProductFile && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedProductFile(null);
+                              setProductFilePreview("");
+                              setProductUploadError("");
+                            }}
+                            className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-2.5 py-1.5 rounded-xl text-xs transition"
+                          >
+                            Batal Foto Baru
+                          </button>
+                        )}
+                      </div>
+
+                      {selectedProductFile && (
+                        <p className="text-[11px] font-mono text-emerald-700 truncate">
+                          File dipilih: {selectedProductFile.name} ({(selectedProductFile.size / 1024).toFixed(0)} KB)
+                        </p>
+                      )}
+
+                      {productUploadError && (
+                        <p className="text-[11px] text-rose-600 font-bold">
+                          {productUploadError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Input manual atau URL gambar cadangan */}
+                  <div className="space-y-1 pt-2 border-t border-slate-200">
+                    <span className="text-[10px] text-slate-500 font-semibold">
+                      Atau gunakan URL / Path Gambar Langsung:
+                    </span>
                     <input
                       type="text"
                       placeholder="https://... atau /images/..."
                       value={productForm.image}
                       onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-700 focus:bg-white focus:border-[#90802a] focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono text-slate-700 focus:border-[#90802a] focus:outline-none"
                     />
-                    {productForm.image && (
-                      <div className="h-9 w-9 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
-                        <img
-                          src={productForm.image}
-                          alt="Preview"
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLElement).style.display = "none";
-                          }}
-                        />
-                      </div>
-                    )}
                   </div>
 
+                  {/* Preset gambar */}
                   <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
-                    <span className="font-bold">Preset Lokal:</span>
+                    <span className="font-bold">Preset Cepat:</span>
                     <button
                       type="button"
-                      onClick={() => setProductForm({ ...productForm, image: "/images/mie-ongklok.jpg" })}
-                      className="rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 text-amber-900 font-semibold"
+                      onClick={() => {
+                        setSelectedProductFile(null);
+                        setProductFilePreview("");
+                        setProductForm({ ...productForm, image: "/images/mie-ongklok.jpg" });
+                      }}
+                      className="rounded-lg bg-white hover:bg-amber-50 border border-slate-200 px-2 py-0.5 text-slate-700 font-semibold"
                     >
                       Mie Ongklok
                     </button>
                     <button
                       type="button"
-                      onClick={() => setProductForm({ ...productForm, image: "/images/purwaceng.jpg" })}
-                      className="rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 text-amber-900 font-semibold"
+                      onClick={() => {
+                        setSelectedProductFile(null);
+                        setProductFilePreview("");
+                        setProductForm({ ...productForm, image: "/images/purwaceng.jpg" });
+                      }}
+                      className="rounded-lg bg-white hover:bg-amber-50 border border-slate-200 px-2 py-0.5 text-slate-700 font-semibold"
                     >
                       Purwaceng
                     </button>
                     <button
                       type="button"
-                      onClick={() => setProductForm({ ...productForm, image: "/images/hero-dieng.jpg" })}
-                      className="rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 text-amber-900 font-semibold"
+                      onClick={() => {
+                        setSelectedProductFile(null);
+                        setProductFilePreview("");
+                        setProductForm({ ...productForm, image: "/images/hero-dieng.jpg" });
+                      }}
+                      className="rounded-lg bg-white hover:bg-amber-50 border border-slate-200 px-2 py-0.5 text-slate-700 font-semibold"
                     >
                       Hero Titik 0 Dieng
                     </button>
@@ -2879,6 +3873,146 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* POP UP MODAL TAMBAH & EDIT KURIR */}
+        {isCourierModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
+            onClick={() => {
+              setIsCourierModalOpen(false);
+              setEditingCourier(null);
+            }}
+          >
+            <div
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-6 flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-slate-100 bg-[#292a23] px-5 py-4 text-white">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f4ce00] text-black shadow-xs text-base">
+                    🛵
+                  </span>
+                  <div>
+                    <h3 className="text-base font-black tracking-tight text-white">
+                      {editingCourier ? "Edit Data Kurir" : "Tambah Kurir Pengantaran"}
+                    </h3>
+                    <p className="text-[11px] text-[#dedad0]">
+                      Tim Pengantaran D OLEH - OLEH Dieng
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCourierModalOpen(false);
+                    setEditingCourier(null);
+                  }}
+                  className="rounded-xl bg-white/10 hover:bg-white/20 p-2 text-white/80 hover:text-white transition"
+                >
+                  <Flaticon name="cross" className="text-xs" />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <form onSubmit={handleSaveCourier} className="p-5 sm:p-6 space-y-4 text-xs">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
+                    Nama Kurir <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Mas Bambang Dieng"
+                    value={courierForm.name}
+                    onChange={(e) => setCourierForm({ ...courierForm, name: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:border-sky-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
+                    Nomor WhatsApp / HP Kurir <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: 08123456789 atau 628123456789"
+                    value={courierForm.phone}
+                    onChange={(e) => setCourierForm({ ...courierForm, phone: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:border-sky-500 focus:outline-none"
+                  />
+                  <p className="text-[10px] text-slate-500">
+                    Nomor ini akan digunakan admin untuk kirim link rute Maps pengantaran &amp; oleh pembeli untuk chat kurir.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
+                      Armada / Kendaraan
+                    </label>
+                    <select
+                      value={courierForm.vehicle}
+                      onChange={(e) => setCourierForm({ ...courierForm, vehicle: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:border-sky-500 focus:outline-none"
+                    >
+                      <option value="Sepeda Motor">Sepeda Motor</option>
+                      <option value="Mobil Pickup">Mobil Pickup</option>
+                      <option value="Mobil Blind Van">Mobil Blind Van</option>
+                      <option value="Mobil Pribadi">Mobil Pribadi</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
+                      Zona Antar Prioritas
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Dieng Kulon & Kompleks Candi"
+                      value={courierForm.zone}
+                      onChange={(e) => setCourierForm({ ...courierForm, zone: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:border-sky-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCourierModalOpen(false);
+                      setEditingCourier(null);
+                    }}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingCourier}
+                    className="rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 px-5 py-2.5 text-xs font-extrabold text-white transition shadow-xs inline-flex items-center gap-1.5"
+                  >
+                    {isSavingCourier ? (
+                      <>
+                        <Flaticon name="spinner" className="text-xs animate-spin" />
+                        <span>Menyimpan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Flaticon name="check-circle" className="text-xs" />
+                        <span>{editingCourier ? "Simpan Perubahan" : "Simpan Kurir"}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

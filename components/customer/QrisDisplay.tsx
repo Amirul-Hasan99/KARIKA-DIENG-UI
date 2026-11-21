@@ -21,7 +21,24 @@ export default function QrisDisplay({
   customerId,
 }: QrisDisplayProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [customQrisUrl, setCustomQrisUrl] = useState<string>("");
+  const [merchantName, setMerchantName] = useState<string>("D OLEH - OLEH DIENG");
   const [timeLeft, setTimeLeft] = useState<number>(15 * 60); // 15 minutes countdown
+
+  // Load custom QRIS from store settings if available
+  useEffect(() => {
+    fetch("/api/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings?.qris_image_url) {
+          setCustomQrisUrl(d.settings.qris_image_url);
+        }
+        if (d.settings?.qris_merchant_name) {
+          setMerchantName(d.settings.qris_merchant_name);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Generate QR Code data URL
   useEffect(() => {
@@ -82,19 +99,25 @@ export default function QrisDisplay({
       {/* Merchant Details */}
       <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-200/80 text-center">
         <h4 className="text-xs font-black tracking-wide text-slate-900 uppercase">
-          KOPI & SNACK COFFEE BAR
+          {merchantName}
         </h4>
         <div className="flex items-center justify-center gap-2 mt-0.5 text-[10px] text-slate-500">
           <span>NMID: <strong className="font-mono text-slate-700">ID1020304050601</strong></span>
           <span>•</span>
-          <span>A01 (Midtrans)</span>
+          <span>QRIS Resmi Standar BI</span>
         </div>
       </div>
 
       {/* QR Code Presentation Box */}
       <div className="p-4 flex flex-col items-center bg-white">
         <div className="relative p-2 bg-white rounded-xl border-2 border-slate-200/80 shadow-xs">
-          {qrDataUrl ? (
+          {customQrisUrl ? (
+            <img
+              src={customQrisUrl}
+              alt={`QRIS Toko ${merchantName}`}
+              className="w-48 h-48 sm:w-52 sm:h-52 object-contain"
+            />
+          ) : qrDataUrl ? (
             <img
               src={qrDataUrl}
               alt={`QRIS Payment ${orderNumber}`}
@@ -131,7 +154,7 @@ export default function QrisDisplay({
             </span>
           </div>
           <div className="flex items-center justify-between text-slate-600">
-            <span>Meja: <strong className="text-slate-900 font-bold">Meja {tableNumber}</strong></span>
+            <span>Layanan: <strong className="text-slate-900 font-bold">{tableNumber === "delivery" ? "Antar Penginapan" : `Meja ${tableNumber}`}</strong></span>
             <span className="font-mono font-bold text-slate-700">{orderNumber}</span>
           </div>
         </div>

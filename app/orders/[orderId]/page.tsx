@@ -17,10 +17,10 @@ const paymentLabels: Record<string, string> = {
 };
 
 const deliveryLabels: Record<string, string> = {
-  pending: "Menunggu Diproses Toko",
-  assigned: "Kurir Ditugaskan",
-  picked_up: "Dalam Pengantaran",
-  delivered: "Pesanan Telah Tiba",
+  pending: "Belum Dikirim",
+  assigned: "Belum Dikirim",
+  picked_up: "Sedang Mengirim",
+  delivered: "Selesai Mengirim",
   failed_attempt: "Pengantaran Tertunda",
 };
 
@@ -377,7 +377,7 @@ export default function OrderTrackingPage() {
           ? "- Bukti Transfer: SUDAH SAYA LAMPIRKAN DI BAWAH (Foto Struk Terlampir)"
           : "- Bukti Transfer: Siap saya kirimkan ke chat ini";
 
-        const msg = `Halo Admin Dioleh - oleh Dieng, saya ingin konfirmasi pesanan saya:
+        const msg = `Halo Admin D OLEH - OLEH Dieng, saya ingin konfirmasi pesanan saya:
 
 *DATA PESANAN:*
 - No. Order: #${order.order_number}
@@ -422,11 +422,11 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
               <span>Cari dengan No. WA</span>
             </Link>
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#292a23] text-[#f4ce00] shadow-xs" title="Dioleh - oleh Dieng">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#292a23] text-[#f4ce00] shadow-xs" title="D OLEH - OLEH">
                 <BrandLogoIcon size={14} color="#f4ce00" />
               </span>
               <span className="text-xs font-black tracking-tight text-[#24251f] hidden sm:inline">
-                Dioleh - oleh <span className="text-[#90802a] ml-0.5">Dieng</span>
+                D OLEH - OLEH
               </span>
             </div>
           </div>
@@ -563,12 +563,20 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                   </div>
 
                   <div className="rounded-2xl bg-[#f8f7f2] p-4 border border-[#e9e7df]">
-                    <p className="text-xs font-medium text-[#77766f]">Tahap Pengiriman</p>
+                    <p className="text-xs font-medium text-[#77766f]">Status Pengantaran</p>
                     <div className="mt-1.5 flex items-center gap-2">
-                      <Flaticon name="truck-side" variant="sr" className="text-base text-[#938126]" />
-                      <span className="font-bold text-sm">
-                        {deliveryLabels[order.delivery_status || "pending"] ||
-                          order.delivery_status}
+                      <span className="text-base">🛵</span>
+                      <span className="font-black text-sm text-[#24251f]">
+                        {(() => {
+                          const status = order.delivery_status || "pending";
+                          if (status === "delivered" || order.order_status === "completed") {
+                            return "Selesai Mengirim";
+                          }
+                          if (status === "picked_up" || order.order_status === "ready") {
+                            return "Sedang Mengirim";
+                          }
+                          return "Belum Dikirim";
+                        })()}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-[#77766f]">
@@ -577,7 +585,53 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                   </div>
                 </div>
 
-                {/* Real-time 4-Stage Delivery Tracking Stepper */}
+                {/* Card Informasi Kurir Pengantar (Jika Telah Ditugaskan Admin) */}
+                {order.courier_name && (
+                  <div className="mt-4 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50/80 via-white to-sky-50/50 p-4 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 border border-sky-500/20 text-xl shadow-xs">
+                          🛵
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
+                              Kurir Pengantar Anda
+                            </span>
+                            <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                              <span>Aktif</span>
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-black text-slate-900 mt-0.5">
+                            {order.courier_name}
+                          </h4>
+                          {order.courier_phone && (
+                            <p className="text-xs font-mono text-slate-600 font-semibold">
+                              WhatsApp: {order.courier_phone}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {order.courier_phone && (
+                        <a
+                          href={`https://wa.me/${order.courier_phone.replace(/\D/g, "").replace(/^0/, "62")}?text=${encodeURIComponent(
+                            `Halo Mas ${order.courier_name}, saya ${order.customer_name || "pembeli"} (Pesanan #${order.order_number}). Mau konfirmasi pengantaran oleh-oleh ke alamat saya.`
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs inline-flex items-center justify-center gap-2 transition shadow-xs shrink-0"
+                        >
+                          <Flaticon name="whatsapp" variant="brands" className="text-sm" />
+                          <span>Hubungi Kurir via WhatsApp</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3 Tahap Status Pengantaran (Sinkron Admin) */}
                 <div className="mt-6 rounded-2xl border border-amber-200/80 bg-white p-4 sm:p-5 shadow-xs">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div className="flex items-center gap-2">
@@ -586,100 +640,119 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                       </span>
                       <p className="text-xs font-bold text-[#24251f] uppercase tracking-wider">
-                        Live Tracking Status Pengantaran
+                        Status Pengantaran Pesanan (Live)
                       </p>
                     </div>
                     <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                      Real-time Sinkron Admin
+                      Sinkron Panel Admin
                     </span>
                   </div>
 
-                  {/* 4 Steps Indicator */}
-                  <div className="mt-5 grid grid-cols-4 gap-2 text-center">
-                    {[
-                      { step: 1, label: "1. Diterima Toko", sub: "Antrean Masuk" },
-                      { step: 2, label: "2. Dikemas", sub: "Proses Packing" },
-                      { step: 3, label: "3. Kurir OTW", sub: "Menuju Titik Maps" },
-                      { step: 4, label: "4. Selesai", sub: "Pesanan Tiba" },
-                    ].map((s) => {
-                      const currentStep = (() => {
-                        if (order.delivery_status === "delivered" || order.order_status === "completed") return 4;
-                        if (order.delivery_status === "picked_up" || order.order_status === "ready") return 3;
-                        if (order.delivery_status === "assigned" || order.order_status === "cooking") return 2;
-                        return 1;
-                      })();
+                  {/* 3 Steps Indicator */}
+                  {(() => {
+                    const currentStage = (() => {
+                      if (order.delivery_status === "delivered" || order.order_status === "completed") return 3;
+                      if (order.delivery_status === "picked_up" || order.order_status === "ready") return 2;
+                      return 1;
+                    })();
 
-                      const isPassed = currentStep > s.step;
-                      const isCurrent = currentStep === s.step;
+                    return (
+                      <>
+                        <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+                          {[
+                            {
+                              step: 1,
+                              label: "1. Belum Dikirim",
+                              sub: "Pesanan Disiapkan Toko",
+                              icon: "📦",
+                            },
+                            {
+                              step: 2,
+                              label: "2. Sedang Mengirim",
+                              sub: "Kurir Menuju Lokasi Anda",
+                              icon: "🛵",
+                            },
+                            {
+                              step: 3,
+                              label: "3. Selesai Mengirim",
+                              sub: "Pesanan Telah Diterima",
+                              icon: "🎉",
+                            },
+                          ].map((s) => {
+                            const isPassed = currentStage > s.step;
+                            const isCurrent = currentStage === s.step;
 
-                      return (
-                        <div key={s.step} className="flex flex-col items-center">
-                          <div
-                            className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-black transition-all ${
-                              isPassed
-                                ? "bg-emerald-600 text-white shadow-xs"
-                                : isCurrent
-                                ? "bg-[#f4ce00] text-black ring-4 ring-amber-100 shadow-md scale-105"
-                                : "bg-slate-100 text-slate-400 border border-slate-200"
-                            }`}
-                          >
-                            {isPassed ? "✓" : s.step}
-                          </div>
-                          <p
-                            className={`mt-2 text-xs font-bold leading-tight ${
-                              isCurrent
-                                ? "text-[#24251f]"
-                                : isPassed
-                                ? "text-emerald-700"
-                                : "text-slate-400"
-                            }`}
-                          >
-                            {s.label}
-                          </p>
-                          <span
-                            className={`text-[10px] mt-0.5 hidden xs:inline ${
-                              isCurrent
-                                ? "text-amber-800 font-semibold"
-                                : "text-slate-400"
-                            }`}
-                          >
-                            {s.sub}
-                          </span>
+                            return (
+                              <div key={s.step} className="flex flex-col items-center">
+                                <div
+                                  className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-black transition-all ${
+                                    isPassed
+                                      ? "bg-emerald-600 text-white shadow-xs"
+                                      : isCurrent
+                                      ? "bg-[#f4ce00] text-black ring-4 ring-amber-100 shadow-md scale-105"
+                                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                                  }`}
+                                >
+                                  {isPassed ? "✓" : s.icon}
+                                </div>
+                                <p
+                                  className={`mt-2 text-xs font-bold leading-tight ${
+                                    isCurrent
+                                      ? "text-[#24251f]"
+                                      : isPassed
+                                      ? "text-emerald-700"
+                                      : "text-slate-400"
+                                  }`}
+                                >
+                                  {s.label}
+                                </p>
+                                <span
+                                  className={`text-[10px] mt-0.5 hidden xs:inline ${
+                                    isCurrent
+                                      ? "text-amber-800 font-semibold"
+                                      : "text-slate-400"
+                                  }`}
+                                >
+                                  {s.sub}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
 
-                  {/* Progress Line */}
-                  <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-500 via-emerald-500 to-emerald-600 transition-all duration-500"
-                      style={{
-                        width:
-                          order.delivery_status === "delivered" || order.order_status === "completed"
-                            ? "100%"
-                            : order.delivery_status === "picked_up" || order.order_status === "ready"
-                            ? "75%"
-                            : order.delivery_status === "assigned" || order.order_status === "cooking"
-                            ? "50%"
-                            : "25%",
-                      }}
-                    />
-                  </div>
+                        {/* Progress Line */}
+                        <div className="mt-5 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 via-sky-500 to-emerald-600 transition-all duration-500"
+                            style={{
+                              width:
+                                currentStage === 3
+                                  ? "100%"
+                                  : currentStage === 2
+                                  ? "50%"
+                                  : "15%",
+                            }}
+                          />
+                        </div>
 
-                  {/* Dynamic Status Banner Description */}
-                  <div className="mt-3.5 rounded-xl bg-[#faf9f5] p-3 text-xs border border-[#eae7dc] flex items-center gap-2">
-                    <Flaticon name="info" variant="sr" className="text-sm text-[#90802a] shrink-0" />
-                    <p className="text-[#5c5a52] leading-relaxed">
-                      {order.delivery_status === "delivered" || order.order_status === "completed"
-                        ? "🎉 Pesanan telah sukses sampai dan diserahkan ke pembeli. Selamat menikmati oleh-oleh khas Dieng!"
-                        : order.delivery_status === "picked_up" || order.order_status === "ready"
-                        ? "🛵 Kurir Karika Dieng sedang meluncur dalam perjalanan menuju titik koordinat Google Maps Anda."
-                        : order.delivery_status === "assigned" || order.order_status === "cooking"
-                        ? "🎁 Paket oleh-oleh Anda sedang dikemas dan dipacking rapi oleh tim Karika Dieng."
-                        : "📦 Toko Karika Dieng telah menerima pesanan Anda. Sedang menunggu antrean pengemasan."}
-                    </p>
-                  </div>
+                        {/* Dynamic Status Banner Description */}
+                        <div className="mt-3.5 rounded-xl bg-[#faf9f5] p-3.5 text-xs border border-[#eae7dc] flex items-center gap-2.5">
+                          <Flaticon name="info" variant="sr" className="text-base text-[#90802a] shrink-0" />
+                          <p className="text-[#5c5a52] leading-relaxed">
+                            {currentStage === 3
+                              ? "🎉 Pesanan telah sukses sampai dan diserahkan ke pembeli. Selamat menikmati oleh-oleh khas Dieng!"
+                              : currentStage === 2
+                              ? `🛵 ${
+                                  order.courier_name
+                                    ? `Kurir kami (${order.courier_name}) sedang dalam perjalanan mengantarkan pesanan ke lokasi Anda.`
+                                    : "Kurir sedang meluncur dalam perjalanan menuju lokasi titik Maps Anda di kawasan Dieng."
+                                }`
+                              : "📦 Toko D OLEH - OLEH Dieng sedang menyiapkan dan mengemas paket pesanan Anda."}
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 

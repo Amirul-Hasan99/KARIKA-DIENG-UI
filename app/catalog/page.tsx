@@ -99,8 +99,30 @@ export default function CatalogPage() {
           (category === "Semua" || p.group === category) &&
           `${p.name} ${p.description}`.toLowerCase().includes(query.toLowerCase())
       ),
-    [category, query]
+    [category, query, products]
   );
+
+  // Pagination State for 9 products per page (3x3 grid)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [category, query]);
+
+  const totalPages = Math.max(1, Math.ceil(visible.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = visible.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      const el = document.getElementById("catalog-grid-top");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  };
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
   const total = products.reduce((s, p) => s + p.price * (cart[p.id] || 0), 0);
@@ -268,7 +290,7 @@ export default function CatalogPage() {
                 <BrandLogoIcon size={16} color="#f4ce00" />
               </span>
               <span className="text-base xs:text-lg sm:text-xl font-black tracking-tight text-[#24251f] whitespace-nowrap">
-                Dioleh - oleh <span className="text-[#90802a]">Dieng</span>
+                D OLEH - OLEH
               </span>
             </Link>
           </div>
@@ -374,7 +396,7 @@ export default function CatalogPage() {
       )}
 
       {/* Catalog Main View */}
-      <section className="mx-auto max-w-7xl px-4 pb-16 pt-7 sm:px-8 sm:pt-10">
+      <section className="mx-auto max-w-7xl px-3 pb-16 pt-6 sm:px-8 sm:pt-10">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[.2em] text-[#90802a] flex items-center gap-1.5">
@@ -403,103 +425,207 @@ export default function CatalogPage() {
           </div>
         </div>
 
-        {/* Category Pills */}
-        <div className="mt-7 flex gap-2 overflow-x-auto pb-2">
-          {categories.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                category === c
-                  ? "bg-[#292a23] text-white shadow-xs"
-                  : "border border-[#e4e1d7] bg-white text-[#66665e] hover:border-[#aaa58d]"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
+        {/* Category Pills & Product Counter */}
+        <div className="mt-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#efeee9] pb-4">
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
+            {categories.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  category === c
+                    ? "bg-[#292a23] text-white shadow-xs"
+                    : "border border-[#e4e1d7] bg-white text-[#66665e] hover:border-[#aaa58d]"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
+          <div className="text-xs text-[#77766f] font-medium flex items-center gap-2">
+            <span>
+              Menampilkan{" "}
+              <strong className="text-[#24251f]">
+                {visible.length === 0 ? 0 : startIndex + 1}–{Math.min(startIndex + itemsPerPage, visible.length)}
+              </strong>{" "}
+              dari <strong className="text-[#24251f]">{visible.length}</strong> produk
+            </span>
+            {totalPages > 1 && (
+              <span className="rounded-full bg-[#f4ce00]/20 px-2.5 py-0.5 text-[10px] font-black text-[#857200] border border-[#f4ce00]/40">
+                Hal. {currentPage}/{totalPages}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Product Cards Grid */}
-        <div className="mt-6 grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-3">
-          {visible.map((p) => (
-            <article
-              key={p.id}
-              className="group overflow-hidden rounded-3xl border border-[#e9e7df] bg-white shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+        {/* Anchor for Smooth Scrolling when Page Changes */}
+        <div id="catalog-grid-top" className="scroll-mt-24" />
+
+        {/* Empty State when no products match */}
+        {visible.length === 0 ? (
+          <div className="mt-12 rounded-3xl border border-dashed border-[#d9d6cb] bg-white p-8 sm:p-12 text-center shadow-xs max-w-md mx-auto">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#faf8ed] text-[#857200] mb-4">
+              <Flaticon name="search" className="text-2xl" />
+            </div>
+            <h3 className="text-lg font-bold text-[#24251f]">Produk Tidak Ditemukan</h3>
+            <p className="mt-1.5 text-xs text-[#727168] leading-relaxed">
+              Tidak ada produk yang cocok dengan kata kunci &quot;{query}&quot; pada kategori &quot;{category}&quot;.
+            </p>
+            <button
+              onClick={() => {
+                setQuery("");
+                setCategory("Semua");
+              }}
+              className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#292a23] px-4 py-2 text-xs font-bold text-[#f4ce00] hover:bg-black transition shadow-xs"
             >
-              <button onClick={() => setSelected(p)} className="block w-full text-left">
-                <div className="relative aspect-[4/3] overflow-hidden bg-[#eeece4]">
-                  <Image
-                    src={p.image}
-                    alt={p.name}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    unoptimized
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-800 shadow-xs">
-                    Foto referensi
-                  </span>
-                  {p.is_available === false ? (
-                    <span className="absolute top-3 right-3 rounded-full bg-rose-600 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white shadow-xs">
-                      Stok Habis
+              <Flaticon name="refresh" className="text-xs" />
+              <span>Tampilkan Semua Produk</span>
+            </button>
+          </div>
+        ) : (
+          /* Product Cards Grid: Selalu 9 Kotak (3 Kolom x 3 Baris) di Mobile, Tablet & Desktop */
+          <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6">
+            {paginatedProducts.map((p) => (
+              <article
+                key={p.id}
+                className="group overflow-hidden rounded-2xl sm:rounded-3xl border border-[#e9e7df] bg-white shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+              >
+                <button onClick={() => setSelected(p)} className="block w-full text-left">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-[#eeece4]">
+                    <Image
+                      src={p.image}
+                      alt={p.name}
+                      fill
+                      sizes="(max-width: 640px) 33vw, (max-width: 1024px) 33vw, 33vw"
+                      unoptimized
+                      className="object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <span className="hidden sm:inline-block absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-semibold text-slate-800 shadow-xs">
+                      Foto referensi
                     </span>
-                  ) : (
-                    <span className="absolute bottom-3 right-3 rounded-full bg-[#292a23]/90 px-3 py-1 text-xs font-bold text-white">
-                      Paket isi 6
-                    </span>
-                  )}
-                </div>
-                <div className="px-5 pt-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[.16em] text-[#958329]">
-                    {p.group}
-                  </p>
-                  <h2 className="mt-1 text-lg font-bold text-[#24251f]">{p.name}</h2>
-                  <p className="mt-2 line-clamp-2 min-h-12 text-sm leading-6 text-[#74736b]">
-                    {p.description}
-                  </p>
-                  <div className="mt-4 flex items-center justify-between border-t border-[#efeee9] pt-4 pb-1">
-                    <p className="text-base xs:text-lg font-black text-[#24251f] whitespace-nowrap">{rupiah(p.price)}</p>
-                    <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#8a7200] shrink-0">
-                      <span>Detail</span>
-                      <Flaticon name="angle-small-right" className="text-sm" />
+                    {p.is_available === false ? (
+                      <span className="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 rounded-full bg-rose-600 px-1.5 sm:px-2.5 py-0.5 text-[8px] sm:text-[10px] font-black uppercase tracking-wider text-white shadow-xs">
+                        Habis
+                      </span>
+                    ) : (
+                      <span className="absolute bottom-1.5 right-1.5 sm:bottom-3 sm:right-3 rounded-full bg-[#292a23]/90 px-1.5 sm:px-2.5 py-0.5 text-[8px] sm:text-[10px] font-bold text-white">
+                        Isi 6
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-2 sm:p-5 pt-2 sm:pt-4">
+                    <p className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-[#958329]">
+                      {p.group}
+                    </p>
+                    <h2 className="mt-0.5 sm:mt-1 text-xs sm:text-base lg:text-lg font-bold text-[#24251f] line-clamp-2 min-h-[1.85rem] sm:min-h-12 leading-tight sm:leading-snug">
+                      {p.name}
+                    </h2>
+                    <p className="hidden sm:block mt-1 sm:mt-2 line-clamp-2 min-h-10 sm:min-h-12 text-xs sm:text-sm leading-relaxed text-[#74736b]">
+                      {p.description}
+                    </p>
+                    <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between border-t border-[#efeee9] pt-1.5 sm:pt-4 pb-0.5 sm:pb-1">
+                      <p className="text-xs sm:text-base lg:text-lg font-black text-[#24251f] whitespace-nowrap">
+                        {rupiah(p.price)}
+                      </p>
+                      <span className="hidden xs:inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-bold text-[#8a7200] shrink-0">
+                        <span>Detail</span>
+                        <Flaticon name="angle-small-right" className="text-xs" />
+                      </span>
+                    </div>
+                  </div>
+                </button>
+
+                {p.is_available === false ? (
+                  <div className="flex flex-col gap-1 border-t border-rose-100 p-1.5 sm:px-4 sm:py-3 bg-rose-50/70 text-center">
+                    <span className="text-[9px] sm:text-[11px] font-bold text-rose-700 flex items-center justify-center gap-1">
+                      <Flaticon name="cross-circle" className="text-[10px] sm:text-xs text-rose-600" />
+                      <span>Stok Kosong</span>
                     </span>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col gap-1 sm:gap-2.5 border-t border-[#efeee9] p-1.5 sm:px-4 sm:py-3 bg-[#faf9f5]">
+                    <span className="hidden sm:block text-[11px] font-bold text-[#75746d] text-center uppercase tracking-wider">
+                      Tambah ke pesanan
+                    </span>
+                    <div className="flex items-center justify-center gap-1 sm:gap-4">
+                      <button
+                        aria-label={`Kurangi ${p.name}`}
+                        onClick={() => change(p.id, -1)}
+                        className="grid h-6 w-6 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-full border border-[#e4e1d7] bg-white hover:bg-[#f8f7f2] transition"
+                      >
+                        <Flaticon name="minus" className="text-[9px] sm:text-[10px]" />
+                      </button>
+                      <span className="w-4 sm:w-6 text-center text-xs sm:text-sm font-black text-[#24251f]">
+                        {cart[p.id] || 0}
+                      </span>
+                      <button
+                        aria-label={`Tambah ${p.name}`}
+                        onClick={() => change(p.id, 1)}
+                        className="grid h-6 w-6 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-full bg-[#f4ce00] hover:bg-[#dfba00] transition shadow-xs text-black"
+                      >
+                        <Flaticon name="plus" className="text-[9px] sm:text-[10px]" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination Navigation Controls (Untuk 9 Kotak Produk) */}
+        {visible.length > 0 && totalPages > 1 && (
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 rounded-2xl border border-[#e9e7df] bg-white p-3 sm:p-4 shadow-xs">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1.5 rounded-xl border border-[#d9d6cb] bg-white px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold text-[#24251f] hover:bg-[#faf9f5] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-2xs"
+                title="Halaman Sebelumnya"
+              >
+                <Flaticon name="angle-small-left" className="text-sm" />
+                <span>Sebelumnya</span>
               </button>
 
-              {p.is_available === false ? (
-                <div className="flex flex-col gap-1 border-t border-rose-100 px-4 py-3 bg-rose-50/70">
-                  <span className="text-[11px] font-bold text-rose-700 flex items-center gap-1.5">
-                    <Flaticon name="cross-circle" className="text-xs text-rose-600" />
-                    Stok Sedang Kosong
-                  </span>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2.5 border-t border-[#efeee9] px-4 py-3 bg-[#faf9f5]">
-                  <span className="text-[11px] font-bold text-[#75746d] text-center uppercase tracking-wider">Tambah ke pesanan</span>
-                  <div className="flex items-center justify-center gap-4">
-                    <button
-                      aria-label={`Kurangi ${p.name}`}
-                      onClick={() => change(p.id, -1)}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#e4e1d7] bg-white hover:bg-[#f8f7f2] transition"
-                    >
-                      <Flaticon name="minus" className="text-[10px]" />
-                    </button>
-                    <span className="w-6 text-center text-sm font-black text-[#24251f]">{cart[p.id] || 0}</span>
-                    <button
-                      aria-label={`Tambah ${p.name}`}
-                      onClick={() => change(p.id, 1)}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#f4ce00] hover:bg-[#dfba00] transition shadow-xs text-black"
-                    >
-                      <Flaticon name="plus" className="text-[10px]" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </article>
-          ))}
-        </div>
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1.5 rounded-xl border border-[#d9d6cb] bg-white px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold text-[#24251f] hover:bg-[#faf9f5] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-2xs"
+                title="Halaman Berikutnya"
+              >
+                <span>Berikutnya</span>
+                <Flaticon name="angle-small-right" className="text-sm" />
+              </button>
+            </div>
+
+            {/* Nomor Halaman Buttons */}
+            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto max-w-full py-0.5 sm:py-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`h-8 sm:h-9 min-w-8 sm:min-w-9 px-2 sm:px-3 rounded-xl text-xs font-bold transition flex items-center justify-center ${
+                    currentPage === pageNum
+                      ? "bg-[#292a23] text-[#f4ce00] shadow-xs"
+                      : "bg-[#faf9f5] text-[#24251f] border border-[#e4e1d7] hover:bg-[#f0eee6]"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+            </div>
+
+            <div className="text-xs text-[#77766f]">
+              Halaman <strong className="text-[#24251f]">{currentPage}</strong> dari{" "}
+              <strong className="text-[#24251f]">{totalPages}</strong>
+            </div>
+          </div>
+        )}
 
         {/* Footer info pill */}
         <div className="mt-10 rounded-2xl border border-[#e9e7df] bg-white p-5 text-center shadow-xs">

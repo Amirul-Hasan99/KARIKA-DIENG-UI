@@ -13,19 +13,6 @@
     "stock_qty": 150
   },
   {
-    "id": "carica-premium",
-    "name": "Carica Premium",
-    "group": "Carica",
-    "pack": "6 cup besar",
-    "price": 40000,
-    "description": "Pilihan kemasan cup besar untuk berbagi; buah carica pilihan dalam sirup khas dataran tinggi Dieng.",
-    "image": "https://down-id.img.susercontent.com/file/id-11134207-7ra0k-mc7nllxauxj618",
-    "source": "https://shopee.co.id/Carica-Sumbing-Segar-Kemasan-Plastik-isi-6-Cup-Khas-Dieng-Wonosobo-Ekonomis-i.168398720.44458581587",
-    "note": "Pilihan kualitas terbaik dengan isi buah lebih padat.",
-    "is_available": true,
-    "stock_qty": 85
-  },
-  {
     "id": "carica-kardus",
     "name": "Carica Kardus",
     "group": "Carica",

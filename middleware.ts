@@ -33,6 +33,7 @@ export async function middleware(request: NextRequest) {
   const publicRead =
     (path === "/api/seed" && request.method === "GET") ||
     (path === "/api/products" && request.method === "GET") ||
+    (path === "/api/settings" && request.method === "GET") ||
     (/^\/api\/orders\/[^/]+$/.test(path) && request.method === "GET") ||
     (path === "/api/orders/search" && request.method === "GET");
   const protectedPage = path === "/admin" || path.startsWith("/admin/");

@@ -120,10 +120,27 @@ export function updateKarikaProduct(
 
 export function deleteKarikaProduct(id: string): boolean {
   const products = ensureProductsFile();
+  const target = products.find((p) => p.id === id);
   const filtered = products.filter((p) => p.id !== id);
   if (filtered.length === products.length) {
     return false;
   }
   saveProductsFile(filtered);
+
+  // Hapus file gambar jika ada di public/uploads/products/ dan tidak dipakai produk lain
+  if (target?.image && target.image.startsWith("/uploads/products/")) {
+    const isUsedElsewhere = filtered.some((p) => p.image === target.image);
+    if (!isUsedElsewhere) {
+      try {
+        const filePath = path.join(process.cwd(), "public", target.image.replace(/^\//, ""));
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (e) {
+        console.warn("[products] Failed to clean up deleted product image:", e);
+      }
+    }
+  }
+
   return true;
 }

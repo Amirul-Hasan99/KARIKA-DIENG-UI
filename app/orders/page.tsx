@@ -14,27 +14,27 @@ const deliveryStatusMap: Record<
   { label: string; desc: string; step: number; color: string }
 > = {
   pending: {
-    label: "Menunggu Konfirmasi Toko",
-    desc: "Pesanan Anda telah diterima dan sedang dipersiapkan oleh toko.",
+    label: "Belum Dikirim",
+    desc: "Pesanan telah diterima dan sedang dipersiapkan oleh toko.",
     step: 1,
     color: "bg-amber-100 text-amber-900 border-amber-300",
   },
   assigned: {
-    label: "Kurir Ditugaskan",
-    desc: "Kurir telah menerima pesanan dan bersiap menuju lokasi Anda.",
-    step: 2,
-    color: "bg-blue-100 text-blue-900 border-blue-300",
+    label: "Belum Dikirim (Kurir Disiapkan)",
+    desc: "Kurir telah ditugaskan dan bersiap mengambil pesanan dari toko.",
+    step: 1,
+    color: "bg-amber-100 text-amber-900 border-amber-300",
   },
   picked_up: {
-    label: "Kurir Dalam Perjalanan (Otw Dieng)",
-    desc: "Kurir sedang menuju penginapan/villa Anda di kawasan Dieng.",
-    step: 3,
-    color: "bg-purple-100 text-purple-900 border-purple-300",
+    label: "Sedang Mengirim",
+    desc: "Kurir sedang dalam perjalanan menuju penginapan/villa Anda di Dieng.",
+    step: 2,
+    color: "bg-sky-100 text-sky-900 border-sky-300",
   },
   delivered: {
-    label: "Pesanan Telah Tiba",
+    label: "Selesai Mengirim",
     desc: "Pesanan telah sukses diantarkan dan diterima.",
-    step: 4,
+    step: 3,
     color: "bg-emerald-100 text-emerald-900 border-emerald-300",
   },
   failed_attempt: {
@@ -159,7 +159,7 @@ function OrdersContent() {
             </span>
             <div className="flex flex-col">
               <span className="text-lg font-black tracking-tight text-[#24251f]">
-                Dioleh - oleh <span className="text-[#90802a] ml-1">Dieng</span>
+                D OLEH - OLEH
               </span>
               <span className="text-[10px] text-[#78776f] font-medium leading-none">
                 Laman Pantau Pesanan
@@ -370,24 +370,23 @@ function OrdersContent() {
                         <span className="text-xs text-[#78776f]">{delivery.desc}</span>
                       </div>
 
-                      {/* 4-Step Progress Bar */}
-                      <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+                      {/* 3-Step Progress Bar Status Pengantaran */}
+                      <div className="grid grid-cols-3 gap-2">
                         {[
-                          { step: 1, label: "Toko" },
-                          { step: 2, label: "Kurir" },
-                          { step: 3, label: "Dalam Jalan" },
-                          { step: 4, label: "Tiba" },
+                          { step: 1, label: "1. Belum Dikirim", icon: "📦" },
+                          { step: 2, label: "2. Sedang Mengirim", icon: "🛵" },
+                          { step: 3, label: "3. Selesai Mengirim", icon: "✓" },
                         ].map((s) => {
                           const isDone = delivery.step >= s.step;
                           return (
-                            <div key={s.step} className="space-y-1">
+                            <div key={s.step} className="space-y-1 text-center">
                               <div
                                 className={`h-2 rounded-full transition-all ${
                                   isDone ? "bg-emerald-500" : "bg-[#ebe8de]"
                                 }`}
                               />
                               <p
-                                className={`text-[10px] font-bold text-center ${
+                                className={`text-[10px] font-bold ${
                                   isDone ? "text-emerald-800" : "text-slate-400"
                                 }`}
                               >

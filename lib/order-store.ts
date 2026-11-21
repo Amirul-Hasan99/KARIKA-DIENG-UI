@@ -423,10 +423,21 @@ export async function updateOrderStatus(
   return updated;
 }
 
-export async function updateOrderDeliveryStatus(orderId: string, deliveryStatus: NonNullable<Order["delivery_status"]>): Promise<Order | null> {
+export async function updateOrderDeliveryStatus(
+  orderId: string,
+  deliveryStatus: NonNullable<Order["delivery_status"]>,
+  courierInfo?: { courier_id?: string; courier_name?: string; courier_phone?: string }
+): Promise<Order | null> {
   const order = await getOrderById(orderId);
   if (!order) return null;
-  const updated = { ...order, delivery_status: deliveryStatus, updated_at: new Date().toISOString() };
+  const updated: Order = {
+    ...order,
+    delivery_status: deliveryStatus,
+    courier_id: courierInfo?.courier_id !== undefined ? courierInfo.courier_id : order.courier_id,
+    courier_name: courierInfo?.courier_name !== undefined ? courierInfo.courier_name : order.courier_name,
+    courier_phone: courierInfo?.courier_phone !== undefined ? courierInfo.courier_phone : order.courier_phone,
+    updated_at: new Date().toISOString(),
+  };
   ordersStore.set(order.id, updated);
   persistOrderToDisk(updated);
 
@@ -438,7 +449,15 @@ export async function updateOrderDeliveryStatus(orderId: string, deliveryStatus:
     }
   } catch (e) {}
 
-  if (hasFirestoreCredentials()) await adminDb!.collection("orders").doc(order.id).update({ delivery_status: deliveryStatus, updated_at: updated.updated_at });
+  if (hasFirestoreCredentials()) {
+    await adminDb!.collection("orders").doc(order.id).update({
+      delivery_status: deliveryStatus,
+      ...(courierInfo?.courier_id ? { courier_id: courierInfo.courier_id } : {}),
+      ...(courierInfo?.courier_name ? { courier_name: courierInfo.courier_name } : {}),
+      ...(courierInfo?.courier_phone ? { courier_phone: courierInfo.courier_phone } : {}),
+      updated_at: updated.updated_at,
+    });
+  }
   return updated;
 }
 

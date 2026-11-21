@@ -76,6 +76,15 @@ export interface OrderItem {
 export type PaymentStatus = 'pending' | 'settlement' | 'expire' | 'failed';
 export type OrderStatus = 'received' | 'cooking' | 'ready' | 'completed';
 
+export interface Courier {
+  id: string;
+  name: string;
+  phone: string;
+  zone?: string;
+  vehicle?: string;
+  is_active?: boolean;
+}
+
 export interface Order {
   id: string;
   order_number: string; // e.g. GC-260916-A101
@@ -99,6 +108,8 @@ export interface Order {
   delivery_distance_km?: number;
   delivery_status?: 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'failed_attempt';
   courier_id?: string;
+  courier_name?: string;
+  courier_phone?: string;
   whatsapp_confirmation_sent_at?: string;
   payment_proof_url?: string;
   payment_proof_uploaded_at?: string;
