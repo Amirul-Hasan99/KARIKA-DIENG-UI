@@ -43,9 +43,9 @@ export function BrandLogoBadge({
 
   return (
     <span
-      className={`inline-flex items-center justify-center bg-[#292a23] text-[#f4ce00] shadow-xs shrink-0 ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center bg-[#292a23] text-[#E25C00] shadow-xs shrink-0 ${sizeClasses[size]} ${className}`}
     >
-      <BrandLogoIcon size={iconSizes[size]} color="#f4ce00" />
+      <BrandLogoIcon size={iconSizes[size]} color="#E25C00" />
     </span>
   );
 }

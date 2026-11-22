@@ -43,7 +43,7 @@ export default function QrisDisplay({
   // Generate QR Code data URL
   useEffect(() => {
     // Standardized QR payload format representation
-    const qrPayload = `00020101021226670016ID.CO.MIDTRANS.WWW011893600503000008988551440014ID.GO.QRIS.WWW0215ID10203040506010303UME520458125303360540${String(totalAmount)}.005802ID5919KOPI & SNACK BAR6007JAKARTA62${String(orderNumber.length).padStart(2, "0")}${orderNumber}6304`;
+    const qrPayload = `00020101021226670016ID.GO.QRIS.WWW011893600503000008988551440014ID.GO.QRIS.WWW0215ID10203040506010303UME520458125303360540${String(totalAmount)}.005802ID5919D OLEH OLEH6008WONOSOBO62${String(orderNumber.length).padStart(2, "0")}${orderNumber}6304`;
 
     QRCode.toDataURL(
       qrPayload,

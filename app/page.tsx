@@ -177,7 +177,7 @@ export default function HomePage() {
     setActiveOrder(null);
   };
   return (
-    <div className="min-h-screen bg-[#f8f7f2] text-[#24251f] selection:bg-[#f4ce00] selection:text-black">
+    <div className="min-h-screen bg-[#f8f7f2] text-[#24251f] selection:bg-[#E25C00] selection:text-white">
       {/* Main Header / Navigation */}
       <header className="sticky top-0 z-30 border-b border-[#e7e4d8] bg-[#f8f7f2]/90 backdrop-blur-md">
         <nav className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-10">
@@ -187,8 +187,8 @@ export default function HomePage() {
               className="flex items-center gap-2 sm:gap-2.5 group"
               title="D OLEH - OLEH"
             >
-              <span className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl bg-[#292a23] text-[#f4ce00] shadow-sm transition group-hover:bg-black shrink-0">
-                <BrandLogoIcon size={18} color="#f4ce00" />
+              <span className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl bg-[#292a23] text-[#E25C00] shadow-sm transition group-hover:bg-black shrink-0">
+                <BrandLogoIcon size={18} color="#E25C00" />
               </span>
               <div className="flex flex-col">
                 <span className="text-base xs:text-lg sm:text-2xl font-black tracking-tight text-[#24251f] whitespace-nowrap">
@@ -238,7 +238,7 @@ export default function HomePage() {
               <Button
                 variant="secondary"
                 size="default"
-                className="rounded-full shadow-xs hover:shadow-md transition gap-1.5 font-bold h-8 sm:h-9 px-3 sm:px-4 bg-[#f4ce00] hover:bg-[#dfba00] text-[#24251f] text-xs shrink-0"
+                className="rounded-full shadow-xs hover:shadow-md transition gap-1.5 font-bold h-8 sm:h-9 px-3 sm:px-4 bg-[#E25C00] hover:bg-[#c84f00] text-white text-xs shrink-0"
               >
                 <Flaticon name="shopping-bag" variant="sr" className="text-xs sm:text-sm" />
                 <span className="hidden sm:inline">Beli Oleh-Oleh</span>
@@ -256,7 +256,7 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f4ce00] px-2.5 py-0.5 text-[11px] font-black text-black">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#E25C00] px-2.5 py-0.5 text-[11px] font-black text-white">
                     <Flaticon name="bell-ring" variant="sr" className="text-xs" />
                     PESANAN AKTIF
                   </span>
@@ -313,12 +313,12 @@ export default function HomePage() {
             {/* Left Column: Headlines & Call to actions */}
             <div className="lg:col-span-7 space-y-6">
               <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl text-[#1e1f1a] leading-[1.08]">
-                 <span className="text-[#a48600]">
+                 <span className="text-[#E25C00]">
                   D' oleh-Oleh
                 </span>{" "}
                 <br />
                 Dingin udaranya,{" "}
-                <span className="text-[#a48600]">
+                <span className="text-[#E25C00]">
                   hangat &amp; manis
                 </span>{" "}
                 oleh-olehnya.
@@ -369,7 +369,7 @@ export default function HomePage() {
             <div className="lg:col-span-5">
               <div className="relative isolate mx-auto w-full max-w-md lg:max-w-none">
                 {/* Decorative background glow */}
-                <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-[#f4ce00]/25 via-[#e2d5a3]/30 to-transparent blur-xl -z-10" />
+                <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-[#E25C00]/25 via-[#fed7aa]/30 to-transparent blur-xl -z-10" />
 
                 <div className="relative aspect-[4/5] sm:aspect-[4/4.5] overflow-hidden rounded-[2.25rem] border border-[#d8d4c5] bg-[#222824] shadow-2xl">
                   <Image
@@ -386,14 +386,14 @@ export default function HomePage() {
                   {/* Top Badge on image */}
                   <div className="absolute top-5 left-5 right-5 flex items-center justify-between">
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md">
-                      <Flaticon name="compass" variant="rr" className="text-xs text-[#f4ce00]" />
+                      <Flaticon name="compass" variant="rr" className="text-xs text-[#E25C00]" />
                       Titik 0 Km Dieng
                     </span>
                   </div>
 
                   {/* Bottom Captions on image */}
                   <div className="absolute bottom-6 left-6 right-6 text-white space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#f4ce00]">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#E25C00]">
                       D' Oleh-Oleh
                     </p>
                     <p className="text-xs text-white/80 leading-relaxed pt-1">
@@ -412,7 +412,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-3 sm:px-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <Badge variant="default" className="bg-[#f4ce00] text-black font-extrabold">
+              <Badge variant="default" className="bg-[#E25C00] text-white font-extrabold">
                 Koleksi Terpopuler
               </Badge>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-[#1e1f1a]">
@@ -458,7 +458,7 @@ export default function HomePage() {
                   </div>
 
                   <CardHeader className="p-2 sm:p-5 pb-1 sm:pb-2">
-                    <CardTitle className="text-xs sm:text-base lg:text-lg font-extrabold text-[#24251f] group-hover:text-[#a48600] transition leading-tight sm:leading-snug line-clamp-2 min-h-[2rem] sm:min-h-12">
+                    <CardTitle className="text-xs sm:text-base lg:text-lg font-extrabold text-[#24251f] group-hover:text-[#E25C00] transition leading-tight sm:leading-snug line-clamp-2 min-h-[2rem] sm:min-h-12">
                       {p.name}
                     </CardTitle>
                     <p className="hidden sm:block text-xs text-[#737167] mt-1 line-clamp-2 leading-relaxed">
@@ -469,7 +469,7 @@ export default function HomePage() {
 
                 <CardFooter className="p-2 sm:p-5 pt-1.5 sm:pt-3 border-t border-[#f1eee4] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 mt-auto">
                   <div className="w-full sm:w-auto">
-                    <span className="text-[8px] sm:text-[10px] font-bold text-[#958329] uppercase tracking-wider block">
+                    <span className="text-[8px] sm:text-[10px] font-bold text-[#E25C00] uppercase tracking-wider block">
                       Harga
                     </span>
                     <span className="text-xs sm:text-base lg:text-lg font-black text-[#24251f]">
@@ -480,7 +480,7 @@ export default function HomePage() {
                   <Link href="/catalog" className="w-full sm:w-auto">
                     <Button
                       size="sm"
-                      className="w-full sm:w-auto rounded-lg sm:rounded-xl font-extrabold bg-[#f4ce00] text-black hover:bg-[#dfba00] h-7 sm:h-9 px-2 sm:px-4 text-[10px] sm:text-xs shadow-xs"
+                      className="w-full sm:w-auto rounded-lg sm:rounded-xl font-extrabold bg-[#E25C00] text-white hover:bg-[#c84f00] h-7 sm:h-9 px-2 sm:px-4 text-[10px] sm:text-xs shadow-xs"
                     >
                       <span>Pesan</span>
                       <Flaticon name="shopping-bag" variant="sr" className="text-[10px] sm:text-xs ml-1" />
@@ -527,7 +527,7 @@ export default function HomePage() {
                     onClick={() => handleProductPageChange(pageNum)}
                     className={`h-8 sm:h-9 min-w-8 sm:min-w-9 px-2 sm:px-3 rounded-xl text-xs font-bold transition flex items-center justify-center ${
                       currentProductPage === pageNum
-                        ? "bg-[#292a23] text-[#f4ce00] shadow-xs"
+                        ? "bg-[#E25C00] text-white shadow-xs"
                         : "bg-[#faf9f5] text-[#24251f] border border-[#e4e1d7] hover:bg-[#f0eee6]"
                     }`}
                   >
@@ -546,7 +546,7 @@ export default function HomePage() {
           <div className="mt-8 text-center">
             <Link
               href="/catalog"
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#292a23] hover:bg-black text-[#f4ce00] px-6 py-3 text-xs sm:text-sm font-extrabold shadow-md transition"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#E25C00] hover:bg-[#c84f00] text-white px-6 py-3 text-xs sm:text-sm font-extrabold shadow-md transition"
             >
               <Flaticon name="shop" className="text-sm" />
               <span>Buka Katalog Lengkap</span>
@@ -562,12 +562,12 @@ export default function HomePage() {
             {/* Column 1: INFORMASI */}
             <div className="space-y-3.5">
               <div className="space-y-2">
-                <span className="text-xs font-black uppercase tracking-wider text-[#8a7200] block">
+                <span className="text-xs font-black uppercase tracking-wider text-[#E25C00] block">
                   INFORMASI
                 </span>
                 <Link href="/" className="inline-flex items-center gap-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#292a23] text-[#f4ce00] shadow-xs">
-                    <BrandLogoIcon size={18} color="#f4ce00" />
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#292a23] text-[#E25C00] shadow-xs">
+                    <BrandLogoIcon size={18} color="#E25C00" />
                   </span>
                   <span className="text-xl font-black tracking-tight text-[#24251f]">
                     D OLEH - OLEH
@@ -579,11 +579,11 @@ export default function HomePage() {
               </p>
               <div className="space-y-1.5 pt-1 text-xs text-[#545249]">
                 <div className="flex items-center gap-2 font-medium">
-                  <Flaticon name="marker" variant="sr" className="text-xs text-[#938126]" />
+                  <Flaticon name="marker" variant="sr" className="text-xs text-[#E25C00]" />
                   <span>Titik 0 Km Dieng, Kejajar, Wonosobo, Jawa Tengah</span>
                 </div>
                 <div className="flex items-center gap-2 font-medium">
-                  <Flaticon name="clock" variant="sr" className="text-xs text-[#938126]" />
+                  <Flaticon name="clock" variant="sr" className="text-xs text-[#E25C00]" />
                   <span>Buka Setiap Hari: 07.00 - 21.00 WIB</span>
                 </div>
               </div>
@@ -591,12 +591,12 @@ export default function HomePage() {
 
             {/* Column 2: BANTUAN */}
             <div className="space-y-3.5">
-              <h3 className="text-xs font-black uppercase tracking-wider text-[#8a7200]">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#E25C00]">
                 BANTUAN
               </h3>
               <ul className="space-y-2.5 text-xs sm:text-sm text-[#66645a]">
                 <li>
-                  <Link href="/orders" className="hover:text-black transition font-bold text-[#8a7200] flex items-center gap-1.5">
+                  <Link href="/orders" className="hover:text-black transition font-bold text-[#E25C00] flex items-center gap-1.5">
                     <Flaticon name="truck-side" className="text-xs" />
                     <span>Pantau Status Pesanan</span>
                   </Link>
@@ -637,7 +637,7 @@ export default function HomePage() {
 
             {/* Column 3: METODE PEMBAYARAN */}
             <div className="space-y-3.5">
-              <h3 className="text-xs font-black uppercase tracking-wider text-[#8a7200]">
+              <h3 className="text-xs font-black uppercase tracking-wider text-[#E25C00]">
                 METODE PEMBAYARAN
               </h3>
               <p className="text-xs sm:text-sm text-[#66645a] leading-relaxed">

@@ -116,10 +116,17 @@ export function verifyMidtransSignature(params: {
   serverKey?: string;
 }): boolean {
   const { orderId, statusCode, grossAmount, signatureKey, serverKey } = params;
+  const isMockEnv =
+    !MIDTRANS_SERVER_KEY ||
+    MIDTRANS_SERVER_KEY.includes("YOUR_SERVER_KEY_HERE") ||
+    process.env.NODE_ENV !== "production" ||
+    process.env.DEMO_CHECKOUT === "true";
+
   if (
-    signatureKey === "sandbox-simulation-key" ||
-    signatureKey === "dummy-simulation-key" ||
-    signatureKey.startsWith("dummy-")
+    isMockEnv &&
+    (signatureKey === "sandbox-simulation-key" ||
+      signatureKey === "dummy-simulation-key" ||
+      signatureKey.startsWith("dummy-"))
   ) {
     return true;
   }

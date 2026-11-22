@@ -9,33 +9,6 @@ import { useKitchenOrders } from "@/hooks/useKitchenOrders";
 import { Order, OrderStatus, MenuItem, Category } from "@/types";
 import { formatOrderTime, formatRupiah } from "@/lib/utils";
 import { printReceiptViaBrowser } from "@/lib/thermal-printer";
-import {
-  Coffee,
-  ChefHat,
-  Bell,
-  BellOff,
-  Printer,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  Search,
-  Volume2,
-  Utensils,
-  AlertCircle,
-  ExternalLink,
-  DollarSign,
-  TrendingUp,
-  ShoppingBag,
-  QrCode,
-  Store,
-  Download,
-  XCircle,
-  Check,
-  Package,
-  Layers,
-  Calendar,
-  MapPin,
-} from "@/components/ui/FlaticonCompat";
 import Flaticon from "@/components/ui/Flaticon";
 import { KarikaProduct, INITIAL_KARIKA_PRODUCTS, KARIKA_CATEGORIES } from "@/lib/karika-products-data";
 import { Courier } from "@/types";
@@ -79,8 +52,6 @@ export default function AdminDashboardPage() {
   const [courierForm, setCourierForm] = useState({
     name: "",
     phone: "",
-    zone: "Dieng Kulon & Kompleks Candi",
-    vehicle: "Sepeda Motor",
   });
 
   // Product modal & CRUD form state with Device Image Upload
@@ -503,8 +474,6 @@ Mohon kurir segera ambil paket di sentra D OLEH - OLEH dan meluncur ke lokasi pe
     setCourierForm({
       name: "",
       phone: "",
-      zone: "Dieng Kulon & Kompleks Candi",
-      vehicle: "Sepeda Motor",
     });
     setIsCourierModalOpen(true);
   };
@@ -514,8 +483,6 @@ Mohon kurir segera ambil paket di sentra D OLEH - OLEH dan meluncur ke lokasi pe
     setCourierForm({
       name: c.name,
       phone: c.phone,
-      zone: c.zone || "Area 0-8 Km Dieng",
-      vehicle: c.vehicle || "Sepeda Motor",
     });
     setIsCourierModalOpen(true);
   };
@@ -537,8 +504,6 @@ Mohon kurir segera ambil paket di sentra D OLEH - OLEH dan meluncur ke lokasi pe
             id: editingCourier ? editingCourier.id : undefined,
             name: courierForm.name.trim(),
             phone: courierForm.phone.trim(),
-            zone: courierForm.zone.trim(),
-            vehicle: courierForm.vehicle.trim(),
             is_active: true,
           },
         }),
@@ -641,11 +606,20 @@ Matur nuwun sanget sampun blonjo wonten Dioleh - oleh Dieng! Selamat menikmati l
 
     const isCashOrCod = order.payment_type === "cash" || order.payment_type === "cod";
 
+    // Cari kurir pengantar yang ditugaskan ke order ini
+    const assignedCourierId = selectedCouriers[order.id] || order.courier_id;
+    const activeCourier = couriers.find((c) => c.id === assignedCourierId) ||
+      (order.courier_name ? { name: order.courier_name, phone: order.courier_phone || "" } : undefined);
+
+    const courierInfo = activeCourier && activeCourier.name
+      ? `\n*KURIR PENGANTAR:*\nNama Kurir : ${activeCourier.name}\nNo. WhatsApp : ${activeCourier.phone}\n(Kurir kami akan menghubungi Kakak saat tiba di lokasi)\n`
+      : "";
+
     let message = "";
 
     if (isCashOrCod) {
       // Template untuk metode bayar Cash / COD di tempat
-      message = `Halo Kak *${order.customer_name || "Pelanggan"}*, terima kasih banyak telah memesan di *Dioleh - oleh Dieng*! 🙏
+      message = `Halo Kak *${order.customer_name || "Pelanggan"}*, terima kasih banyak telah memesan di *D OLEH - OLEH*! 🙏
 
 Pesanan Anda dengan nomor *#${order.order_number}* telah kami terima dan terkonfirmasi dengan metode pembayaran *COD (Bayar Tunai di Tempat)* 💵
 
@@ -655,8 +629,7 @@ ${itemsSummary}
 
 *ALAMAT & TITIK PENGANTARAN:*
 ${order.delivery_address || "Kawasan Penginapan Dataran Tinggi Dieng"}
-${order.coordinates ? `Titik Google Maps: https://www.google.com/maps/search/?api=1&query=${order.coordinates.lat},${order.coordinates.lng}` : ""}
-
+${order.coordinates ? `Titik Google Maps: https://www.google.com/maps/search/?api=1&query=${order.coordinates.lat},${order.coordinates.lng}` : ""}${courierInfo}
 Mohon kesediaannya menunggu di titik pengiriman yang telah ditentukan, serta mempersiapkan uang tunai pas sebesar *${formatRupiah(order.total_amount)}* saat kurir kami tiba di lokasi pengantaran ya Kak.
 
 Kurir kami sedang menyiapkan paket oleh-oleh hangat Anda dan segera meluncur ke lokasi. Pantau status live kurir di link ini:
@@ -665,7 +638,7 @@ ${trackingUrl}
 Jika ada patokan tambahan, silakan balas chat ini ya Kak. Terima kasih banyak! 🛵`;
     } else {
       // Template untuk metode bayar QRIS (Sudah bayar / lunas)
-      message = `Halo Kak *${order.customer_name || "Pelanggan"}*, terima kasih banyak telah memesan di *Dioleh - oleh Dieng*! 🙏
+      message = `Halo Kak *${order.customer_name || "Pelanggan"}*, terima kasih banyak telah memesan di *D OLEH - OLEH*! 🙏
 
 Pesanan Anda dengan nomor *#${order.order_number}* telah kami verifikasi dan pembayaran via *QRIS (${formatRupiah(order.total_amount)})* telah berhasil diterima (LUNAS) ✅
 
@@ -675,8 +648,7 @@ ${itemsSummary}
 
 *ALAMAT & TITIK PENGANTARAN:*
 ${order.delivery_address || "Kawasan Penginapan Dataran Tinggi Dieng"}
-${order.coordinates ? `Titik Google Maps: https://www.google.com/maps/search/?api=1&query=${order.coordinates.lat},${order.coordinates.lng}` : ""}
-
+${order.coordinates ? `Titik Google Maps: https://www.google.com/maps/search/?api=1&query=${order.coordinates.lat},${order.coordinates.lng}` : ""}${courierInfo}
 Saat ini pesanan Anda sedang dikemas dengan rapi dan higienis. Kurir kami segera berangkat dalam perjalanan menuju lokasi Anda. Mohon ditunggu kedatangan kurir kami ya Kak! 🛵
 
 Pantau status live perjalanan kurir di link ini:
@@ -1075,19 +1047,19 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
       case "received":
         return (
           <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300">
-            <AlertCircle className="h-3 w-3" strokeWidth={2} /> Pesanan Baru
+            <Flaticon name="exclamation" className="text-xs" /> Pesanan Baru
           </span>
         );
       case "cooking":
         return (
           <span className="inline-flex items-center gap-1 rounded-md bg-sky-100 px-2 py-0.5 text-[11px] font-bold text-sky-800 border border-sky-300">
-            <Package className="h-3 w-3" strokeWidth={2} /> Sedang Dikemas
+            <Flaticon name="box-alt" className="text-xs" /> Sedang Dikemas
           </span>
         );
       case "ready":
         return (
           <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-300">
-            <CheckCircle2 className="h-3 w-3" strokeWidth={2} /> Siap Kirim Kurir
+            <Flaticon name="check-circle" className="text-xs" /> Siap Kirim Kurir
           </span>
         );
       case "completed":
@@ -1221,7 +1193,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
         <style>
           @page { size: A4 landscape; margin: 12mm; }
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; margin: 0; padding: 15px; font-size: 12px; }
-          .header { border-bottom: 3px double #f4ce00; padding-bottom: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
+          .header { border-bottom: 3px double #E25C00; padding-bottom: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
           .title { font-size: 20px; font-weight: 900; color: #24251f; margin: 0; }
           .subtitle { font-size: 12px; color: #64748b; margin: 2px 0 0 0; }
           .report-info { text-align: right; font-size: 12px; }
@@ -1309,19 +1281,16 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <Link
               href="/"
-              className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#292a23] to-[#454639] text-[#f4ce00] shadow-md shadow-black/10 hover:opacity-95 transition"
+              className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#292a23] to-[#454639] text-[#E25C00] shadow-md shadow-black/10 hover:opacity-95 transition"
               title="D OLEH - OLEH — Beranda"
             >
-              <BrandLogoIcon size={24} color="#f4ce00" />
+              <BrandLogoIcon size={24} color="#E25C00" />
             </Link>
             <div className="min-w-0 hidden sm:block">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <h1 className="text-sm sm:text-lg font-black tracking-tight text-[#24251f] truncate">
                   D OLEH - OLEH • ADMIN OPERASIONAL
                 </h1>
-                <span className="inline-flex rounded-full bg-[#f4ce00]/20 px-2.5 py-0.5 text-[10px] font-black text-[#857200] border border-[#f4ce00]/40 shrink-0">
-                  DIENG WONOSOBO
-                </span>
               </div>
               <p className="text-[11px] sm:text-xs text-[#727168] truncate max-w-xs sm:max-w-none">
                 Pusat Pengelolaan Produk, Transaksi &amp; Pengantaran 8 KM
@@ -1339,14 +1308,14 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
               }}
               className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-bold transition border ${
                 soundEnabled
-                  ? "bg-[#faf8ed] text-[#857200] border-[#ecd983] hover:bg-[#f6f2d9]"
+                  ? "bg-orange-50 text-[#E25C00] border-orange-200 hover:bg-orange-100"
                   : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
               }`}
               title={soundEnabled ? "Notifikasi Suara Aktif" : "Notifikasi Suara Mati"}
             >
               {soundEnabled ? (
                 <>
-                  <Flaticon name="bell" className="text-xs text-[#857200]" />
+                  <Flaticon name="bell" className="text-xs text-[#E25C00]" />
                   <span className="hidden sm:inline">Bel: ON</span>
                 </>
               ) : (
@@ -1388,14 +1357,14 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
               href="/catalog"
               className="flex items-center gap-1.5 rounded-xl border border-[#e4e1d7] bg-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-[#24251f] hover:bg-[#faf9f5] transition"
             >
-              <Flaticon name="shop" className="text-xs text-[#90802a]" />
+              <Flaticon name="shop" className="text-xs text-[#E25C00]" />
               <span>Katalog</span>
             </Link>
             <Link
               href="/admin/delivery"
-              className="flex items-center gap-1.5 rounded-xl border border-[#ecd983] bg-[#faf8ed] px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-[#857200] hover:bg-[#f6f2d9] transition"
+              className="flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-[#E25C00] hover:bg-orange-100 transition"
             >
-              <Flaticon name="truck-side" className="text-xs text-[#857200]" />
+              <Flaticon name="truck-side" className="text-xs text-[#E25C00]" />
               <span className="hidden sm:inline">Pantau Pengantaran</span>
               <span className="sm:hidden">Kurir</span>
             </Link>
@@ -1423,8 +1392,8 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
               <span className="text-xs font-bold text-slate-500 truncate mr-2">
                 Total Omzet ({getDateFilterLabel()})
               </span>
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                <TrendingUp className="h-4 w-4" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <Flaticon name="wallet" variant="sr" className="text-base" />
               </div>
             </div>
             <p className="mt-2 text-xl sm:text-2xl font-black text-slate-900">
@@ -1435,17 +1404,17 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
             </span>
           </div>
 
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-2xs">
+          <div className="rounded-2xl border border-orange-200 bg-orange-50/50 p-4 shadow-2xs">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-800">Pesanan Baru Masuk</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-                <AlertCircle className="h-4 w-4" />
+              <span className="text-xs font-bold text-orange-900">Pesanan Baru Masuk</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#E25C00]">
+                <Flaticon name="bell-ring" variant="sr" className="text-base" />
               </div>
             </div>
-            <p className="mt-2 text-xl sm:text-2xl font-black text-amber-900">
+            <p className="mt-2 text-xl sm:text-2xl font-black text-orange-950">
               {counts.received}
             </p>
-            <span className="text-[10px] text-amber-700 mt-0.5 block">
+            <span className="text-[10px] text-orange-800 mt-0.5 block font-medium">
               Menunggu diproses toko
             </span>
           </div>
@@ -1453,8 +1422,8 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
           <div className="rounded-2xl border border-sky-200 bg-sky-50/50 p-4 shadow-2xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-sky-800">Sedang Dikemas</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
-                <Package className="h-4 w-4" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+                <Flaticon name="box-alt" variant="sr" className="text-base" />
               </div>
             </div>
             <p className="mt-2 text-xl sm:text-2xl font-black text-sky-900">
@@ -1465,17 +1434,17 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
             </span>
           </div>
 
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-2xs">
+          <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-4 shadow-2xs">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-800">Siap Kirim Kurir</span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-                <CheckCircle2 className="h-4 w-4" />
+              <span className="text-xs font-bold text-teal-800">Siap Kirim Kurir</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+                <Flaticon name="motorcycle" variant="sr" className="text-base" />
               </div>
             </div>
-            <p className="mt-2 text-xl sm:text-2xl font-black text-emerald-950">
+            <p className="mt-2 text-xl sm:text-2xl font-black text-teal-950">
               {counts.ready}
             </p>
-            <span className="text-[10px] text-emerald-700 mt-0.5 block">
+            <span className="text-[10px] text-teal-700 mt-0.5 block">
               Siap menuju lokasi pembeli
             </span>
           </div>
@@ -1488,11 +1457,11 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
               onClick={() => setActiveTab("dashboard")}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
                 activeTab === "dashboard"
-                  ? "bg-amber-600 text-white shadow-xs"
+                  ? "bg-[#E25C00] text-white shadow-xs"
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              <Layers className="h-4 w-4" />
+              <Flaticon name="layers" className="text-xs" />
               <span>Dashboard</span>
             </button>
 
@@ -1504,9 +1473,9 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              <Package className="h-4 w-4" />
+              <Flaticon name="box-alt" className="text-xs" />
               <span>Antrean Pesanan</span>
-              <span className="rounded-full bg-amber-500 px-1.5 py-0.2 text-[10px] text-white">
+              <span className="rounded-full bg-[#E25C00] px-1.5 py-0.2 text-[10px] text-white font-bold">
                 {counts.allActive}
               </span>
             </button>
@@ -1519,7 +1488,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              <QrCode className="h-4 w-4" />
+              <Flaticon name="receipt" className="text-xs" />
               <span>Laporan Transaksi</span>
               <span className="rounded-full bg-slate-200 px-1.5 py-0.2 text-[10px] text-slate-700">
                 {settledOrders.length}
@@ -1536,7 +1505,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
             >
               <Flaticon name="box-alt" className="text-xs" />
               <span>Kelola Produk &amp; Stok</span>
-              <span className="rounded-full bg-[#f4ce00] px-1.5 py-0.2 text-[10px] text-black font-extrabold">
+              <span className="rounded-full bg-[#E25C00] px-1.5 py-0.2 text-[10px] text-white font-extrabold">
                 {products.length}
               </span>
             </button>
@@ -1545,7 +1514,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
               onClick={() => setActiveTab("settings")}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
                 activeTab === "settings"
-                  ? "bg-amber-600 text-white shadow-xs"
+                  ? "bg-[#E25C00] text-white shadow-xs"
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
@@ -1557,7 +1526,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
           {/* Search Box */}
           {activeTab !== "stock" && activeTab !== "settings" && (
             <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Flaticon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
@@ -1614,7 +1583,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   onClick={() => setKdsFilter(chip.id as any)}
                   className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition whitespace-nowrap ${
                     kdsFilter === chip.id
-                      ? "bg-amber-500 text-white shadow-xs"
+                      ? "bg-[#E25C00] text-white shadow-xs"
                       : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
                   }`}
                 >
@@ -1636,7 +1605,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
             ) : kdsOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-500 mb-3">
-                  <Package className="h-6 w-6" />
+                  <Flaticon name="box-alt" className="text-2xl" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-800">Tidak ada antrean pesanan aktif</h3>
                 <p className="text-xs text-slate-500 max-w-xs mt-1">
@@ -1716,7 +1685,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                     className="font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 rounded-lg inline-flex items-center gap-1 transition"
                                   >
                                     <span>🧭 Buka Rute Kurir ({order.coordinates.lat.toFixed(5)}, {order.coordinates.lng.toFixed(5)})</span>
-                                    <ExternalLink className="h-3 w-3" />
+                                    <Flaticon name="share" className="text-[10px]" />
                                   </a>
                                 ) : (
                                   <span className="text-[11px] text-slate-400">Koordinat tidak tersedia</span>
@@ -1748,7 +1717,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                     className="font-bold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1 hover:underline"
                                   >
                                     <span>Chat WA Pembeli</span>
-                                    <ExternalLink className="h-3 w-3" />
+                                    <Flaticon name="share" className="text-[10px]" />
                                   </a>
                                 )}
                               </div>
@@ -1794,7 +1763,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                           <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
-                                <XCircle className="h-4 w-4 text-rose-600" />
+                                <Flaticon name="cross-circle" className="text-sm text-rose-600" />
                                 <span>Pesanan Dibatalkan (Void)</span>
                               </span>
                               <span className="text-[10px] font-bold text-slate-500 bg-white border border-rose-200 px-2 py-0.5 rounded">
@@ -1835,7 +1804,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                 className="flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 p-2 text-xs font-bold text-rose-600 hover:bg-rose-100 transition shadow-2xs"
                                 title="Hapus Permanen"
                               >
-                                <XCircle className="h-4 w-4" />
+                                <Flaticon name="trash" className="text-sm" />
                               </button>
                             </div>
                           </div>
@@ -1853,134 +1822,64 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                 activeCourierList.find((c) => c.id === currentSelectedCourierId) ||
                                 activeCourierList[0];
 
-                              // Normalisasi 3 Status Pengantaran
-                              const currentDelivery =
-                                order.delivery_status === "delivered" || order.order_status === "completed"
-                                  ? "delivered"
-                                  : order.delivery_status === "picked_up" || order.order_status === "ready"
-                                  ? "picked_up"
-                                  : "pending";
-
                               return (
-                                <div className="space-y-2 rounded-2xl border border-sky-200 bg-sky-50/70 p-3 text-xs">
-                                  {/* Header Kurir */}
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-3 space-y-2 text-xs">
                                   <div className="flex items-center justify-between">
-                                    <span className="font-extrabold text-sky-950 flex items-center gap-1.5">
-                                      <span>🛵</span>
-                                      <span>Kurir Pengantar Dieng:</span>
+                                    <span className="font-extrabold text-slate-800 flex items-center gap-1.5 text-xs">
+                                      <Flaticon name="motorcycle" variant="sr" className="text-sm text-[#E25C00]" />
+                                      <span>Pilih Kurir Pengantar:</span>
                                     </span>
-                                    <span className="text-[10px] font-extrabold text-sky-700 bg-white border border-sky-200 px-2 py-0.5 rounded-full">
-                                      {activeCourierList.length} Kurir Aktif
-                                    </span>
-                                  </div>
-
-                                  {/* Dropdown Kurir + Tombol Kirim WA Tugas */}
-                                  <div className="flex items-center gap-1.5">
-                                    <select
-                                      value={currentSelectedCourierId}
-                                      onChange={(e) => {
-                                        const newCourierId = e.target.value;
-                                        setSelectedCouriers({
-                                          ...selectedCouriers,
-                                          [order.id]: newCourierId,
-                                        });
-                                        handleAssignCourier(order.id, newCourierId);
-                                      }}
-                                      className="w-full text-xs font-semibold bg-white border border-sky-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500 shadow-2xs"
-                                    >
-                                      {activeCourierList.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                          {c.name} ({c.phone}) - {c.zone || "Area Dieng"}
-                                        </option>
-                                      ))}
-                                    </select>
-
                                     {activeCourier && (
-                                      <a
-                                        href={getAssignCourierWhatsAppUrl(order, activeCourier)}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="shrink-0 bg-sky-600 hover:bg-sky-700 text-white font-bold p-2 px-3 rounded-xl text-xs inline-flex items-center gap-1 transition shadow-xs"
-                                        title="Kirim rute pesanan dan link Google Maps ke WhatsApp Kurir"
-                                      >
-                                        <Flaticon name="whatsapp" variant="brands" className="text-xs" />
-                                        <span>Tugaskan</span>
-                                      </a>
+                                      <span className="text-[11px] font-mono font-bold text-slate-600 bg-white border border-slate-200 px-2 py-0.5 rounded-full">
+                                        WA: {activeCourier.phone}
+                                      </span>
                                     )}
                                   </div>
 
-                                  {/* 3 Status Pengantaran Terintegrasi */}
-                                  <div className="pt-2 border-t border-sky-200/80 space-y-1.5">
-                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                                      <span>Status Pengantaran:</span>
-                                      <span
-                                        className={`font-black ${
-                                          currentDelivery === "delivered"
-                                            ? "text-emerald-700"
-                                            : currentDelivery === "picked_up"
-                                            ? "text-sky-700"
-                                            : "text-amber-700"
-                                        }`}
-                                      >
-                                        {currentDelivery === "delivered"
-                                          ? "✓ Selesai Mengirim"
-                                          : currentDelivery === "picked_up"
-                                          ? "🛵 Sedang Mengirim"
-                                          : "⏳ Belum Dikirim"}
+                                  <select
+                                    value={currentSelectedCourierId}
+                                    onChange={(e) => {
+                                      const newCourierId = e.target.value;
+                                      setSelectedCouriers({
+                                        ...selectedCouriers,
+                                        [order.id]: newCourierId,
+                                      });
+                                      handleAssignCourier(order.id, newCourierId);
+                                    }}
+                                    className="w-full text-xs font-semibold bg-white border border-slate-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#E25C00] shadow-2xs"
+                                  >
+                                    <option value="">-- Pilih Kurir Pengantar --</option>
+                                    {activeCourierList.map((c) => (
+                                      <option key={c.id} value={c.id}>
+                                        {c.name} ({c.phone})
+                                      </option>
+                                    ))}
+                                  </select>
+
+                                  {activeCourier && (
+                                    <div className="flex items-center justify-between text-[11px] pt-0.5 border-t border-slate-200/80">
+                                      <span className="text-slate-600 truncate">
+                                        Ditugaskan: <strong className="text-slate-900">{activeCourier.name}</strong>
                                       </span>
+                                      <a
+                                        href={`https://wa.me/${activeCourier.phone.replace(/\D/g, "").replace(/^0/, "62")}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-emerald-700 hover:text-emerald-800 font-bold inline-flex items-center gap-1 shrink-0 hover:underline"
+                                        title="Chat Kurir via WhatsApp"
+                                      >
+                                        <Flaticon name="whatsapp" variant="brands" className="text-xs" />
+                                        <span>Chat Kurir</span>
+                                      </a>
                                     </div>
-
-                                    <div className="grid grid-cols-3 gap-1.5">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUpdateDeliveryStatus(order.id, "pending")}
-                                        className={`py-1.5 px-1 rounded-xl text-[10px] font-extrabold transition-all text-center flex flex-col items-center justify-center ${
-                                          currentDelivery === "pending"
-                                            ? "bg-amber-500 text-white shadow-xs ring-2 ring-amber-300"
-                                            : "bg-white text-slate-600 hover:bg-amber-50 hover:text-amber-800 border border-slate-200"
-                                        }`}
-                                        title="Set status pesanan Belum Dikirim"
-                                      >
-                                        <span>Belum</span>
-                                        <span className="text-[9px] opacity-90">Dikirim</span>
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUpdateDeliveryStatus(order.id, "picked_up")}
-                                        className={`py-1.5 px-1 rounded-xl text-[10px] font-extrabold transition-all text-center flex flex-col items-center justify-center ${
-                                          currentDelivery === "picked_up"
-                                            ? "bg-sky-600 text-white shadow-xs ring-2 ring-sky-300"
-                                            : "bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-800 border border-slate-200"
-                                        }`}
-                                        title="Set status kurir Sedang Mengirim"
-                                      >
-                                        <span>Sedang</span>
-                                        <span className="text-[9px] opacity-90">Mengirim</span>
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUpdateDeliveryStatus(order.id, "delivered")}
-                                        className={`py-1.5 px-1 rounded-xl text-[10px] font-extrabold transition-all text-center flex flex-col items-center justify-center ${
-                                          currentDelivery === "delivered"
-                                            ? "bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-300"
-                                            : "bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200"
-                                        }`}
-                                        title="Set status pesanan Selesai Mengirim (Tiba)"
-                                      >
-                                        <span>Selesai</span>
-                                        <span className="text-[9px] opacity-90">Mengirim</span>
-                                      </button>
-                                    </div>
-                                  </div>
+                                  )}
                                 </div>
                               );
                             })()}
 
                             <div className="flex justify-between items-center text-xs pt-1">
                               <span className="font-medium text-slate-500">Total Tagihan:</span>
-                              <span className="font-black text-amber-600 text-sm">
+                              <span className="font-black text-[#E25C00] text-sm">
                                 {formatRupiah(order.total_amount)}
                               </span>
                             </div>
@@ -1990,7 +1889,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                 onClick={() => handleConfirmCash(order.id)}
                                 className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 text-xs font-bold transition shadow-xs cursor-pointer"
                               >
-                                <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                <Flaticon name="check" className="text-xs" />
                                 <span>Konfirmasi / ACC Pembayaran Lunas</span>
                               </button>
                             )}
@@ -2054,7 +1953,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                 className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white p-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
                                 title="Cetak Struk Thermal Kasir"
                               >
-                                <Printer className="h-4 w-4 text-slate-600" />
+                                <Flaticon name="print" className="text-xs text-slate-600" />
                               </button>
 
                               <button
@@ -2062,7 +1961,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                 className="flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 p-2 text-xs font-bold text-rose-600 hover:bg-rose-100 transition"
                                 title="Batalkan Pesanan (Void)"
                               >
-                                <XCircle className="h-4 w-4" />
+                                <Flaticon name="cross" className="text-xs" />
                               </button>
 
                               {nextAction && (
@@ -2071,7 +1970,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                   className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition shadow-xs ${nextAction.color}`}
                                 >
                                   <span>{nextAction.label}</span>
-                                  <ArrowRight className="h-3.5 w-3.5" />
+                                  <Flaticon name="arrow-right" className="text-xs" />
                                 </button>
                               )}
                             </div>
@@ -2115,16 +2014,16 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white transition shadow-2xs active:scale-95"
                     title="Unduh laporan penjualan berformat Excel (.csv UTF-8)"
                   >
-                    <Download className="h-4 w-4" />
+                    <Flaticon name="download" className="text-xs" />
                     <span>Ekspor Excel</span>
                   </button>
 
                   <button
                     onClick={handleExportPDF}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 hover:bg-black px-3.5 py-2 text-xs font-bold text-[#f4ce00] transition shadow-2xs active:scale-95 border border-slate-800"
-                    title="Cetak atau unduh dokumen PDF resmi bertema Dioleh - oleh Dieng"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 hover:bg-black px-3.5 py-2 text-xs font-bold text-[#E25C00] transition shadow-2xs active:scale-95 border border-slate-800"
+                    title="Cetak atau unduh dokumen PDF resmi bertema D OLEH - OLEH"
                   >
-                    <Printer className="h-4 w-4" />
+                    <Flaticon name="print" className="text-xs" />
                     <span>Ekspor Laporan PDF</span>
                   </button>
                 </div>
@@ -2238,11 +2137,11 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     onClick={() => setDateFilter("custom")}
                     className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-bold transition ${
                       dateFilter === "custom"
-                        ? "bg-amber-500 text-white shadow-2xs"
+                        ? "bg-[#E25C00] text-white shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    <Calendar className="h-3.5 w-3.5" />
+                    <Flaticon name="calendar" className="text-xs" />
                     <span>Rentang Tanggal</span>
                   </button>
                 </div>
@@ -2348,7 +2247,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                 className="text-[10px] text-amber-700 hover:underline font-bold inline-flex items-center gap-0.5 mt-0.5"
                               >
                                 <span>Buka Maps ({order.coordinates.lat.toFixed(4)}, {order.coordinates.lng.toFixed(4)})</span>
-                                <ExternalLink className="h-2.5 w-2.5" />
+                                <Flaticon name="share" className="text-[9px]" />
                               </a>
                             ) : (
                               <span className="text-[10px] text-slate-400">Titik Kawasan Dieng</span>
@@ -2428,7 +2327,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition"
                                 title="Cetak Struk"
                               >
-                                <Printer className="h-3 w-3" />
+                                <Flaticon name="print" className="text-xs" />
                                 <span>Struk</span>
                               </button>
                               <button
@@ -2436,7 +2335,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                 className="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition shadow-2xs"
                                 title="Hapus Permanen"
                               >
-                                <XCircle className="h-3.5 w-3.5" />
+                                <Flaticon name="trash" className="text-xs" />
                               </button>
                             </div>
                           </td>
@@ -2470,7 +2369,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                            <button
                              key={pageNum}
                              onClick={() => setCurrentPage(pageNum)}
-                             className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition ${currentPage === pageNum ? 'bg-amber-500 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:border-amber-300'}`}
+                             className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition ${currentPage === pageNum ? 'bg-[#E25C00] text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:border-orange-300'}`}
                            >
                              {pageNum}
                            </button>
@@ -2499,11 +2398,11 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#faf8ed] text-[#857200] border border-[#ecd983]">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-[#E25C00] border border-orange-200">
                       <Flaticon name="box-alt" className="text-sm" />
                     </div>
                     <h3 className="text-base font-extrabold text-[#24251f]">
-                      Manajemen Produk &amp; Stok Katalog Dioleh - oleh Dieng
+                      Manajemen Produk &amp; Stok Katalog D OLEH - OLEH
                     </h3>
                   </div>
                   <p className="text-xs text-[#727168] mt-1 max-w-2xl">
@@ -2524,7 +2423,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
                   <button
                     onClick={handleOpenAddProduct}
-                    className="flex items-center gap-1.5 rounded-xl bg-[#292a23] hover:bg-black text-[#f4ce00] px-3.5 py-1.5 text-xs font-bold transition shadow-xs cursor-pointer"
+                    className="flex items-center gap-1.5 rounded-xl bg-[#E25C00] hover:bg-[#c84f00] text-white px-3.5 py-1.5 text-xs font-bold transition shadow-xs cursor-pointer"
                   >
                     <Flaticon name="plus" className="text-xs" />
                     <span>+ Tambah Produk Baru</span>
@@ -2564,7 +2463,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     placeholder="Cari nama / deskripsi produk..."
                     value={productSearchQuery}
                     onChange={(e) => setProductSearchQuery(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-[#dcd8cc] bg-white pl-9 pr-8 text-xs font-semibold text-[#24251f] placeholder:text-slate-400 outline-none focus:border-[#90802a] focus:ring-1 focus:ring-[#90802a]"
+                    className="h-10 w-full rounded-xl border border-[#dcd8cc] bg-white pl-9 pr-8 text-xs font-semibold text-[#24251f] placeholder:text-slate-400 outline-none focus:border-[#E25C00] focus:ring-1 focus:ring-[#E25C00]"
                   />
                   {productSearchQuery && (
                     <button
@@ -2582,8 +2481,8 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
             {isStockLoading ? (
               <div className="py-16 text-center text-xs text-slate-400">
-                <Flaticon name="spinner" className="text-2xl animate-spin text-[#90802a] mx-auto mb-2" />
-                <p>Memuat katalog produk Dioleh - oleh Dieng...</p>
+                <Flaticon name="spinner" className="text-2xl animate-spin text-[#E25C00] mx-auto mb-2" />
+                <p>Memuat katalog produk D OLEH - OLEH...</p>
               </div>
             ) : (() => {
               const filteredAdminProducts = products.filter((p) => {
@@ -2641,7 +2540,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   {/* Empty State */}
                   {paginatedAdminProducts.length === 0 ? (
                     <div className="rounded-3xl border border-dashed border-[#dcd8cc] bg-white p-12 text-center space-y-3">
-                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#faf8ed] text-[#857200]">
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-[#E25C00]">
                         <Flaticon name="box-alt" className="text-2xl" />
                       </div>
                       <h4 className="text-sm font-extrabold text-[#24251f]">
@@ -2722,7 +2621,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                 {/* Price & Edit Block */}
                                 <div className="mt-4 pt-3 border-t border-[#efeee9] flex items-center justify-between">
                                   <div>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#958329]">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#E25C00]">
                                       Harga Jual (Paket)
                                     </span>
                                     {isEditingPrice ? (
@@ -2731,7 +2630,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                           type="number"
                                           value={editPriceVal}
                                           onChange={(e) => setEditPriceVal(Number(e.target.value))}
-                                          className="w-28 rounded-lg border border-[#f4ce00] px-2 py-1 text-xs font-bold text-[#24251f] outline-none"
+                                          className="w-28 rounded-lg border border-[#E25C00] px-2 py-1 text-xs font-bold text-[#24251f] outline-none"
                                           autoFocus
                                         />
                                         <button
@@ -2760,7 +2659,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                             setEditingPriceId(product.id);
                                             setEditPriceVal(product.price);
                                           }}
-                                          className="text-[10px] font-bold text-[#8a7200] hover:underline"
+                                          className="text-[10px] font-bold text-[#E25C00] hover:underline"
                                         >
                                           [Ubah]
                                         </button>
@@ -2784,7 +2683,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                   className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 px-3 text-xs font-bold text-slate-800 transition shadow-2xs"
                                   title="Edit Foto, Nama, Deskripsi, Kemasan & Harga"
                                 >
-                                  <Flaticon name="edit" className="text-xs text-[#90802a]" />
+                                  <Flaticon name="edit" className="text-xs text-[#E25C00]" />
                                   <span>Edit Produk</span>
                                 </button>
 
@@ -2869,7 +2768,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                             onClick={() => setProductCurrentPage(pageNum)}
                             className={`h-8 sm:h-9 min-w-8 sm:min-w-9 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition flex items-center justify-center ${
                               productCurrentPage === pageNum
-                                ? "bg-[#292a23] text-[#f4ce00] shadow-xs"
+                                ? "bg-[#E25C00] text-white shadow-xs"
                                 : "bg-[#faf9f5] text-[#24251f] border border-[#e4e1d7] hover:bg-[#f0eee6]"
                             }`}
                           >
@@ -2896,7 +2795,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
             {/* Header Settings */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-2xs">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 border border-amber-500/20 shadow-xs">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#E25C00]/10 text-[#E25C00] border border-[#E25C00]/20 shadow-xs">
                   <Flaticon name="settings" className="text-xl" />
                 </span>
                 <div>
@@ -2994,7 +2893,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                 <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-2xs space-y-4">
                   <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                     <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                      <QrCode className="h-4 w-4" />
+                      <Flaticon name="qrcode" className="text-sm" />
                     </span>
                     <div>
                       <h3 className="text-sm font-black text-slate-900">
@@ -3048,7 +2947,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                         <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                           <label
                             htmlFor="qris-file-input"
-                            className="cursor-pointer bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-xs"
+                            className="cursor-pointer bg-[#E25C00] hover:bg-[#c84f00] text-white font-bold px-3.5 py-2 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-xs"
                           >
                             <Flaticon name="upload" className="text-xs" />
                             <span>Pilih Gambar QR</span>
@@ -3085,7 +2984,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                 <button
                   type="submit"
                   disabled={isSavingSettings}
-                  className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-extrabold px-6 py-3 rounded-2xl text-xs inline-flex items-center justify-center gap-2 transition shadow-md shadow-amber-600/20"
+                  className="bg-[#E25C00] hover:bg-[#c84f00] disabled:opacity-50 text-white font-extrabold px-6 py-3 rounded-2xl text-xs inline-flex items-center justify-center gap-2 transition shadow-md shadow-orange-600/20"
                 >
                   {isSavingSettings ? (
                     <>
@@ -3155,7 +3054,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                         key={c.id || `courier-${index}`}
                         className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4 hover:border-sky-300 hover:bg-sky-50/20 transition-all flex flex-col justify-between space-y-3"
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-slate-200 text-base shadow-2xs">
                               🛵
@@ -3170,19 +3069,9 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                               </p>
                             </div>
                           </div>
-                          <span className="shrink-0 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
-                            {c.vehicle || "Motor"}
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                            Aktif
                           </span>
-                        </div>
-
-                        <div className="rounded-xl bg-white border border-slate-200/80 p-2.5 text-[11px] text-slate-600 space-y-1">
-                          <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase">
-                            <span>Wilayah Antar:</span>
-                            <span className="text-emerald-700 font-extrabold">Siap Antar</span>
-                          </div>
-                          <p className="font-semibold text-slate-800 truncate">
-                            📍 {c.zone || "Area Dieng Kulon & Kompleks Candi"}
-                          </p>
                         </div>
 
                         {/* Aksi Kurir: Chat WA, Edit, Hapus */}
@@ -3269,7 +3158,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   className="rounded-full border border-slate-200 bg-white p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition"
                   title="Tutup Popup"
                 >
-                  <XCircle className="h-5 w-5" />
+                  <Flaticon name="cross" className="text-xs" />
                 </button>
               </div>
 
@@ -3341,10 +3230,10 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                         href={`https://www.google.com/maps/dir/?api=1&destination=${selectedOrderDetail.coordinates.lat},${selectedOrderDetail.coordinates.lng}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="bg-[#292a23] hover:bg-black text-[#f4ce00] font-bold px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5 transition shadow-xs"
+                        className="bg-[#292a23] hover:bg-black text-[#E25C00] font-bold px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5 transition shadow-xs"
                       >
                         <span>🧭 Buka Rute Google Maps</span>
-                        <ExternalLink className="h-3 w-3" />
+                        <Flaticon name="share" className="text-[10px]" />
                       </a>
                     </div>
                   )}
@@ -3438,7 +3327,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                         >
                           {activeCourierList.map((c) => (
                             <option key={c.id} value={c.id}>
-                              {c.name} ({c.phone}) - {c.zone || "Area Dieng"}
+                              {c.name} ({c.phone})
                             </option>
                           ))}
                         </select>
@@ -3563,7 +3452,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold px-3 py-2 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-2xs"
                     title="Cetak Struk Thermal"
                   >
-                    <Printer className="h-3.5 w-3.5" />
+                    <Flaticon name="print" className="text-xs" />
                     <span>Cetak Struk</span>
                   </button>
                 </div>
@@ -3580,7 +3469,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       }}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-xs"
                     >
-                      <Check className="h-3.5 w-3.5 stroke-[3]" />
+                      <Flaticon name="check" className="text-xs" />
                       <span>ACC Pembayaran Lunas</span>
                     </button>
                   )}
@@ -3590,7 +3479,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     className="bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 font-bold px-3 py-2 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-2xs"
                     title="Hapus Pesanan Selamanya"
                   >
-                    <XCircle className="h-3.5 w-3.5" />
+                    <Flaticon name="trash" className="text-xs" />
                     <span>Hapus Permanen</span>
                   </button>
 
@@ -3622,7 +3511,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-slate-100 bg-[#292a23] px-5 py-4 text-white">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f4ce00] text-black shadow-xs">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E25C00] text-white shadow-xs">
                     <Flaticon name="box-alt" className="text-sm" />
                   </span>
                   <div>
@@ -3630,7 +3519,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       {editingProduct ? "Edit Informasi Produk" : "Tambah Produk Baru"}
                     </h3>
                     <p className="text-[11px] text-[#dedad0]">
-                      Katalog D OLEH - OLEH Dieng Wonosobo
+                      Katalog Resmi D OLEH - OLEH
                     </p>
                   </div>
                 </div>
@@ -3661,7 +3550,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       placeholder="Contoh: Carica Spesial Dieng"
                       value={productForm.name}
                       onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#90802a] focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#E25C00] focus:outline-none"
                     />
                   </div>
 
@@ -3672,7 +3561,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     <select
                       value={productForm.group}
                       onChange={(e) => setProductForm({ ...productForm, group: e.target.value as any })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#90802a] focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#E25C00] focus:outline-none"
                     >
                       <option value="Carica">Carica</option>
                       <option value="Makanan">Makanan</option>
@@ -3694,7 +3583,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       placeholder="Contoh: 6 cup × 115 g atau 6 bungkus"
                       value={productForm.pack}
                       onChange={(e) => setProductForm({ ...productForm, pack: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#90802a] focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#E25C00] focus:outline-none"
                     />
                   </div>
 
@@ -3710,7 +3599,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       placeholder="Contoh: 25000"
                       value={productForm.price}
                       onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-amber-700 focus:bg-white focus:border-[#90802a] focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-[#E25C00] focus:bg-white focus:border-[#E25C00] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -3726,7 +3615,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       min={0}
                       value={productForm.stock_qty}
                       onChange={(e) => setProductForm({ ...productForm, stock_qty: Number(e.target.value) })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#90802a] focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#E25C00] focus:outline-none"
                     />
                   </div>
 
@@ -3737,7 +3626,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     <select
                       value={productForm.is_available ? "true" : "false"}
                       onChange={(e) => setProductForm({ ...productForm, is_available: e.target.value === "true" })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#90802a] focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 focus:bg-white focus:border-[#E25C00] focus:outline-none"
                     >
                       <option value="true">Tersedia (Bisa Dipesan)</option>
                       <option value="false">Stok Habis (Sold Out)</option>
@@ -3785,7 +3674,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
                         <label
                           htmlFor="product-file-input"
-                          className="cursor-pointer bg-[#292a23] hover:bg-black text-[#f4ce00] font-bold px-3 py-1.5 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-xs"
+                          className="cursor-pointer bg-[#292a23] hover:bg-black text-[#E25C00] font-bold px-3 py-1.5 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-xs"
                         >
                           <Flaticon name="upload" className="text-xs" />
                           <span>Pilih Foto dari Galeri / File</span>
@@ -3830,7 +3719,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       placeholder="https://... atau /images/..."
                       value={productForm.image}
                       onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono text-slate-700 focus:border-[#90802a] focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-mono text-slate-700 focus:border-[#E25C00] focus:outline-none"
                     />
                   </div>
 
@@ -3844,7 +3733,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                         setProductFilePreview("");
                         setProductForm({ ...productForm, image: "/images/mie-ongklok.jpg" });
                       }}
-                      className="rounded-lg bg-white hover:bg-amber-50 border border-slate-200 px-2 py-0.5 text-slate-700 font-semibold"
+                      className="rounded-lg bg-white hover:bg-orange-50 border border-slate-200 px-2 py-0.5 text-slate-700 font-semibold"
                     >
                       Mie Ongklok
                     </button>
@@ -3855,7 +3744,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                         setProductFilePreview("");
                         setProductForm({ ...productForm, image: "/images/purwaceng.jpg" });
                       }}
-                      className="rounded-lg bg-white hover:bg-amber-50 border border-slate-200 px-2 py-0.5 text-slate-700 font-semibold"
+                      className="rounded-lg bg-white hover:bg-orange-50 border border-slate-200 px-2 py-0.5 text-slate-700 font-semibold"
                     >
                       Purwaceng
                     </button>
@@ -3866,7 +3755,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                         setProductFilePreview("");
                         setProductForm({ ...productForm, image: "/images/hero-dieng.jpg" });
                       }}
-                      className="rounded-lg bg-white hover:bg-amber-50 border border-slate-200 px-2 py-0.5 text-slate-700 font-semibold"
+                      className="rounded-lg bg-white hover:bg-orange-50 border border-slate-200 px-2 py-0.5 text-slate-700 font-semibold"
                     >
                       Hero Titik 0 Dieng
                     </button>
@@ -3883,7 +3772,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     placeholder="Tuliskan keterangan rasa, keunggulan, atau cara penyajian oleh-oleh..."
                     value={productForm.description}
                     onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-[#90802a] focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-[#E25C00] focus:outline-none"
                   />
                 </div>
 
@@ -3902,7 +3791,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
                   <button
                     type="submit"
-                    className="flex items-center gap-1.5 rounded-xl bg-[#292a23] hover:bg-black text-[#f4ce00] px-5 py-2 text-xs font-bold transition shadow-xs"
+                    className="flex items-center gap-1.5 rounded-xl bg-[#E25C00] hover:bg-[#c84f00] text-white px-5 py-2 text-xs font-bold transition shadow-xs"
                   >
                     <Flaticon name="check-circle" className="text-xs" />
                     <span>{editingProduct ? "Simpan Perubahan" : "Terbitkan ke Katalog"}</span>
@@ -3939,7 +3828,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   className="rounded-full border border-slate-200 bg-white p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition"
                   title="Tutup"
                 >
-                  <XCircle className="h-5 w-5" />
+                  <Flaticon name="cross" className="text-xs" />
                 </button>
               </div>
 
@@ -3950,7 +3839,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/30 p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
-                          <Check className="h-4 w-4" />
+                          <Flaticon name="check" className="text-sm" />
                         </div>
                         <span className="text-sm font-bold text-emerald-900">
                           Bukti Pembayaran Tersimpan
@@ -4021,14 +3910,14 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       rel="noreferrer"
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition shadow-md"
                     >
-                      <Download className="h-4 w-4" />
+                      <Flaticon name="download" className="text-sm" />
                       <span>Unduh Bukti Pembayaran</span>
                     </a>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 mb-3">
-                      <AlertCircle className="h-8 w-8" />
+                      <Flaticon name="exclamation" className="text-2xl" />
                     </div>
                     <h3 className="text-sm font-bold text-slate-800">
                       Belum Ada Bukti Pembayaran
@@ -4059,7 +3948,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-slate-100 bg-[#292a23] px-5 py-4 text-white">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f4ce00] text-black shadow-xs text-base">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E25C00] text-white shadow-xs text-base">
                     🛵
                   </span>
                   <div>
@@ -4113,39 +4002,8 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-mono font-semibold text-slate-800 focus:bg-white focus:border-sky-500 focus:outline-none"
                   />
                   <p className="text-[10px] text-slate-500">
-                    Nomor ini akan digunakan admin untuk kirim link rute Maps pengantaran &amp; oleh pembeli untuk chat kurir.
+                    Nomor WhatsApp ini digunakan untuk mengirim tugas pengantaran &amp; dihubungi oleh pembeli.
                   </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
-                      Armada / Kendaraan
-                    </label>
-                    <select
-                      value={courierForm.vehicle}
-                      onChange={(e) => setCourierForm({ ...courierForm, vehicle: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:border-sky-500 focus:outline-none"
-                    >
-                      <option value="Sepeda Motor">Sepeda Motor</option>
-                      <option value="Mobil Pickup">Mobil Pickup</option>
-                      <option value="Mobil Blind Van">Mobil Blind Van</option>
-                      <option value="Mobil Pribadi">Mobil Pribadi</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
-                      Zona Antar Prioritas
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: Dieng Kulon & Kompleks Candi"
-                      value={courierForm.zone}
-                      onChange={(e) => setCourierForm({ ...courierForm, zone: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:border-sky-500 focus:outline-none"
-                    />
-                  </div>
                 </div>
 
                 {/* Modal Footer */}

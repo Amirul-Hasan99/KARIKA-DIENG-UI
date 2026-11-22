@@ -89,8 +89,8 @@ export default function AdminLayout({
     return (
       <div className="min-h-screen grid place-items-center bg-[#f8f7f2] text-[#292a23]">
         <div className="flex flex-col items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#292a23] text-[#f4ce00] shadow-md animate-pulse">
-            <BrandLogoIcon size={24} color="#f4ce00" />
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#292a23] text-[#E25C00] shadow-md animate-pulse">
+            <BrandLogoIcon size={24} color="#E25C00" />
           </span>
           <p className="text-sm font-semibold text-slate-700">
             Memverifikasi keamanan sesi admin D OLEH - OLEH...

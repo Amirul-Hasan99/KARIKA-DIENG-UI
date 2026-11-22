@@ -29,7 +29,9 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isLoginPage = path === "/admin/login";
   const isLoginApi = path === "/api/admin/login" || path === "/api/admin/logout";
-  const isPublicApi = path === "/api/orders/checkout" || path === "/api/midtrans/webhook";
+  const isPublicApi =
+    path === "/api/orders/checkout" ||
+    path === "/api/orders/upload-payment-proof";
   const publicRead =
     (path === "/api/seed" && request.method === "GET") ||
     (path === "/api/products" && request.method === "GET") ||
@@ -101,7 +103,7 @@ function addSecurityHeaders(response: NextResponse) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   
   // Permissions policy
-  response.headers.set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  response.headers.set("Permissions-Policy", "geolocation=(self), camera=(self), microphone=()");
 }
 
 export const config = { matcher: ["/admin/:path*", "/api/:path*"] };

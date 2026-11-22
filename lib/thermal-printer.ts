@@ -154,8 +154,8 @@ export function printReceiptViaBrowser(order: Order, options?: PrintOptions) {
         </style>
       </head>
       <body>
-        <div class="center bold" style="font-size: 13px;">${options?.storeName || "KARIKA DIENG"}</div>
-        <div class="center" style="font-size: 10px;">${options?.storeAddress || "Sentra Oleh-Oleh Khas Dieng Wonosobo"}</div>
+        <div class="center bold" style="font-size: 13px;">${options?.storeName || "D OLEH - OLEH"}</div>
+        <div class="center" style="font-size: 10px;">${options?.storeAddress || "Sentra Oleh-Oleh Khas Dieng"}</div>
         <div class="center" style="font-size: 9px;">Titik 0 Km Dieng · Layanan Antar 8 km</div>
         <div class="double-divider"></div>
         

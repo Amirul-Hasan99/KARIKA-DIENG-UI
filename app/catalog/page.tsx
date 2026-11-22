@@ -286,8 +286,8 @@ export default function CatalogPage() {
         <nav className="mx-auto flex h-[62px] sm:h-[68px] max-w-7xl items-center justify-between px-3 sm:px-8">
           <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#292a23] text-[#f4ce00] shadow-xs shrink-0">
-                <BrandLogoIcon size={16} color="#f4ce00" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#292a23] text-[#E25C00] shadow-xs shrink-0">
+                <BrandLogoIcon size={16} color="#E25C00" />
               </span>
               <span className="text-base xs:text-lg sm:text-xl font-black tracking-tight text-[#24251f] whitespace-nowrap">
                 D OLEH - OLEH
@@ -305,7 +305,7 @@ export default function CatalogPage() {
                   : "bg-white text-[#68685f] border-[#e4e1d7] hover:bg-[#f3f0e6]"
               }`}
             >
-              <Flaticon name="truck-side" variant="sr" className="text-xs text-[#a28b00]" />
+              <Flaticon name="truck-side" variant="sr" className="text-xs text-[#E25C00]" />
               <span className="hidden xs:inline">Pantau</span> Pesanan
               {activeOrder && (
                 <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-ping ml-0.5" />
@@ -318,7 +318,7 @@ export default function CatalogPage() {
               rel="noreferrer"
               className="hidden items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[#68685f] hover:bg-white md:flex"
             >
-              <Flaticon name="marker" variant="sr" className="text-xs text-[#a28b00]" />
+              <Flaticon name="marker" variant="sr" className="text-xs text-[#E25C00]" />
               Area antar 8 km
             </a>
 
@@ -329,7 +329,7 @@ export default function CatalogPage() {
               <Flaticon name="shopping-bag" variant="sr" className="text-sm" />
               <span className="hidden xs:inline">Keranjang</span>
               {count > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#f4ce00] px-1 text-[11px] font-bold text-black">
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#E25C00] px-1 text-[11px] font-bold text-white">
                   {count}
                 </span>
               )}
@@ -345,7 +345,7 @@ export default function CatalogPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#f4ce00] px-2.5 py-0.5 text-[11px] font-black text-black">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#E25C00] px-2.5 py-0.5 text-[11px] font-black text-white">
                     <Flaticon name="bell-ring" variant="sr" className="text-xs" />
                     PESANAN AKTIF
                   </span>
@@ -399,8 +399,8 @@ export default function CatalogPage() {
       <section className="mx-auto max-w-7xl px-3 pb-16 pt-6 sm:px-8 sm:pt-10">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-[#90802a] flex items-center gap-1.5">
-              <Flaticon name="box-alt" variant="rr" className="text-xs text-[#90802a]" />
+            <p className="text-xs font-semibold uppercase tracking-[.2em] text-[#E25C00] flex items-center gap-1.5">
+              <Flaticon name="box-alt" variant="rr" className="text-xs text-[#E25C00]" />
               Oleh-oleh Wonosobo · dikemas isi enam
             </p>
             <h1 className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl text-[#24251f]">
@@ -420,7 +420,7 @@ export default function CatalogPage() {
               placeholder="Cari carica, jamur, ongklok..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="h-11 w-full rounded-xl border border-[#e1dfd5] bg-white pl-10 pr-3 text-sm outline-none focus:border-[#b69b00]"
+              className="h-11 w-full rounded-xl border border-[#e1dfd5] bg-white pl-10 pr-3 text-sm outline-none focus:border-[#E25C00]"
             />
           </div>
         </div>
@@ -452,7 +452,7 @@ export default function CatalogPage() {
               dari <strong className="text-[#24251f]">{visible.length}</strong> produk
             </span>
             {totalPages > 1 && (
-              <span className="rounded-full bg-[#f4ce00]/20 px-2.5 py-0.5 text-[10px] font-black text-[#857200] border border-[#f4ce00]/40">
+              <span className="rounded-full bg-[#E25C00]/15 px-2.5 py-0.5 text-[10px] font-black text-[#E25C00] border border-[#E25C00]/30">
                 Hal. {currentPage}/{totalPages}
               </span>
             )}
@@ -465,7 +465,7 @@ export default function CatalogPage() {
         {/* Empty State when no products match */}
         {visible.length === 0 ? (
           <div className="mt-12 rounded-3xl border border-dashed border-[#d9d6cb] bg-white p-8 sm:p-12 text-center shadow-xs max-w-md mx-auto">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#faf8ed] text-[#857200] mb-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-[#E25C00] mb-4">
               <Flaticon name="search" className="text-2xl" />
             </div>
             <h3 className="text-lg font-bold text-[#24251f]">Produk Tidak Ditemukan</h3>
@@ -477,7 +477,7 @@ export default function CatalogPage() {
                 setQuery("");
                 setCategory("Semua");
               }}
-              className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#292a23] px-4 py-2 text-xs font-bold text-[#f4ce00] hover:bg-black transition shadow-xs"
+              className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#E25C00] px-4 py-2 text-xs font-bold text-white hover:bg-[#c84f00] transition shadow-xs"
             >
               <Flaticon name="refresh" className="text-xs" />
               <span>Tampilkan Semua Produk</span>
@@ -516,7 +516,7 @@ export default function CatalogPage() {
                   </div>
 
                   <div className="p-2 sm:p-5 pt-2 sm:pt-4">
-                    <p className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-[#958329]">
+                    <p className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-[#E25C00]">
                       {p.group}
                     </p>
                     <h2 className="mt-0.5 sm:mt-1 text-xs sm:text-base lg:text-lg font-bold text-[#24251f] line-clamp-2 min-h-[1.85rem] sm:min-h-12 leading-tight sm:leading-snug">
@@ -529,7 +529,7 @@ export default function CatalogPage() {
                       <p className="text-xs sm:text-base lg:text-lg font-black text-[#24251f] whitespace-nowrap">
                         {rupiah(p.price)}
                       </p>
-                      <span className="hidden xs:inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-bold text-[#8a7200] shrink-0">
+                      <span className="hidden xs:inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-bold text-[#E25C00] shrink-0">
                         <span>Detail</span>
                         <Flaticon name="angle-small-right" className="text-xs" />
                       </span>
@@ -563,7 +563,7 @@ export default function CatalogPage() {
                       <button
                         aria-label={`Tambah ${p.name}`}
                         onClick={() => change(p.id, 1)}
-                        className="grid h-6 w-6 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-full bg-[#f4ce00] hover:bg-[#dfba00] transition shadow-xs text-black"
+                        className="grid h-6 w-6 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-full bg-[#E25C00] hover:bg-[#c84f00] transition shadow-xs text-white"
                       >
                         <Flaticon name="plus" className="text-[9px] sm:text-[10px]" />
                       </button>
@@ -611,7 +611,7 @@ export default function CatalogPage() {
                   onClick={() => handlePageChange(pageNum)}
                   className={`h-8 sm:h-9 min-w-8 sm:min-w-9 px-2 sm:px-3 rounded-xl text-xs font-bold transition flex items-center justify-center ${
                     currentPage === pageNum
-                      ? "bg-[#292a23] text-[#f4ce00] shadow-xs"
+                      ? "bg-[#E25C00] text-white shadow-xs"
                       : "bg-[#faf9f5] text-[#24251f] border border-[#e4e1d7] hover:bg-[#f0eee6]"
                   }`}
                 >
@@ -750,7 +750,7 @@ export default function CatalogPage() {
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[#727168]">Metode Pembayaran:</span>
                 <span className="font-bold text-slate-800 uppercase">
-                  {createdSuccessOrder.paymentType === "cash" ? "Bayar Tunai (COD)" : "QRIS Midtrans"}
+                  {createdSuccessOrder.paymentType === "cash" ? "Bayar Tunai (COD)" : "QRIS"}
                 </span>
               </div>
               <div className="pt-2 border-t border-[#eae7dc] text-[11px] text-[#727168]">
@@ -824,7 +824,7 @@ export default function CatalogPage() {
                       <span className="w-5 text-center text-sm font-bold">{cart[p.id]}</span>
                       <button
                         onClick={() => change(p.id, 1)}
-                        className="grid h-7 w-7 place-items-center rounded-full bg-[#f4ce00] hover:bg-[#dfba00]"
+                        className="grid h-7 w-7 place-items-center rounded-full bg-[#E25C00] hover:bg-[#c84f00] text-white"
                       >
                         <Flaticon name="plus" className="text-[10px]" />
                       </button>
@@ -841,7 +841,7 @@ export default function CatalogPage() {
               <>
                 <div className="mt-4 flex justify-between font-bold text-base border-t border-[#efeee9] pt-3">
                   <span>Total ({count} paket)</span>
-                  <span className="text-xl text-[#938126]">{rupiah(total)}</span>
+                  <span className="text-xl text-[#E25C00]">{rupiah(total)}</span>
                 </div>
 
                 <form className="mt-5 space-y-4" onSubmit={submitOrder}>
@@ -856,23 +856,23 @@ export default function CatalogPage() {
                         required
                         minLength={2}
                         placeholder="Nama Lengkap Pembeli"
-                        className="h-11 rounded-xl border border-[#dedbd0] px-3.5 text-sm outline-none focus:border-[#b69b00] bg-[#faf9f5]"
+                        className="h-11 rounded-xl border border-[#dedbd0] px-3.5 text-sm outline-none focus:border-[#E25C00] bg-[#faf9f5]"
                       />
                       <input
                         name="phone"
                         required
                         minLength={9}
                         placeholder="Nomor WhatsApp (08...)"
-                        className="h-11 rounded-xl border border-[#dedbd0] px-3.5 text-sm outline-none focus:border-[#b69b00] bg-[#faf9f5]"
+                        className="h-11 rounded-xl border border-[#dedbd0] px-3.5 text-sm outline-none focus:border-[#E25C00] bg-[#faf9f5]"
                       />
                     </div>
                   </div>
 
                   {/* Step 2: Titik Maps Terintegrasi (Alamat Pasti) */}
-                  <div className="rounded-2xl border border-amber-200/90 bg-[#fffdf5] p-3.5 shadow-xs">
+                  <div className="rounded-2xl border border-orange-200 bg-[#fffdfa] p-3.5 shadow-xs">
                     <div className="mb-2 flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f4ce00] text-[11px] font-black text-black">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E25C00] text-[11px] font-black text-white">
                           1
                         </span>
                         <p className="text-xs font-bold uppercase tracking-wider text-[#63530f]">
@@ -910,7 +910,7 @@ export default function CatalogPage() {
                       required
                       minLength={5}
                       placeholder="Contoh: Homestay Dieng Pass Lt. 2 kamar No. 5, atau di samping gapura desa..."
-                      className="min-h-18 w-full rounded-xl border border-[#dedbd0] p-3 text-sm outline-none focus:border-[#b69b00] bg-[#faf9f5]"
+                      className="min-h-18 w-full rounded-xl border border-[#dedbd0] p-3 text-sm outline-none focus:border-[#E25C00] bg-[#faf9f5]"
                     />
                   </div>
 
@@ -920,12 +920,12 @@ export default function CatalogPage() {
                       onClick={() => setPayment("qris")}
                       className={`rounded-xl border p-3 text-left text-sm transition ${
                         payment === "qris"
-                          ? "border-[#b69b00] bg-[#fffbea] shadow-xs"
+                          ? "border-[#E25C00] bg-orange-50/50 shadow-xs ring-1 ring-[#E25C00]"
                           : "border-[#e0ddd2] bg-white"
                       }`}
                     >
                       <div className="flex items-center gap-1.5 font-bold">
-                        <Flaticon name="qr" variant="sr" className="text-xs text-[#a28b00]" />
+                        <Flaticon name="qr" variant="sr" className="text-xs text-[#E25C00]" />
                         <span>QRIS Instan</span>
                       </div>
                       <span className="text-xs text-[#77766f] block mt-0.5">
@@ -938,12 +938,12 @@ export default function CatalogPage() {
                       onClick={() => setPayment("cod")}
                       className={`rounded-xl border p-3 text-left text-sm transition ${
                         payment === "cod"
-                          ? "border-[#b69b00] bg-[#fffbea] shadow-xs"
+                          ? "border-[#E25C00] bg-orange-50/50 shadow-xs ring-1 ring-[#E25C00]"
                           : "border-[#e0ddd2] bg-white"
                       }`}
                     >
                       <div className="flex items-center gap-1.5 font-bold">
-                        <Flaticon name="money" variant="sr" className="text-xs text-[#a28b00]" />
+                        <Flaticon name="money" variant="sr" className="text-xs text-[#E25C00]" />
                         <span>Tunai (COD)</span>
                       </div>
                       <span className="text-xs text-[#77766f] block mt-0.5">
@@ -1009,8 +1009,8 @@ export default function CatalogPage() {
             </button>
 
             <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900 border border-amber-300">
-                <Flaticon name="truck-side" variant="sr" className="text-xs text-[#a28b00]" />
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-950 border border-orange-300">
+                <Flaticon name="truck-side" variant="sr" className="text-xs text-[#E25C00]" />
                 <span>Pelacakan Pengiriman Dieng</span>
               </div>
               <h2 className="mt-2 text-2xl font-extrabold text-[#24251f]">Pantau Pesanan Anda</h2>
@@ -1021,9 +1021,9 @@ export default function CatalogPage() {
 
             {/* Currently Active Local Order */}
             {activeOrder && (
-              <div className="rounded-2xl border-2 border-[#b69b00]/30 bg-[#fdfbf3] p-4 space-y-2.5">
+              <div className="rounded-2xl border-2 border-[#E25C00]/30 bg-[#fffdfa] p-4 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#8a7200]">Pesanan di Perangkat Ini</span>
+                  <span className="text-xs font-bold text-[#E25C00]">Pesanan di Perangkat Ini</span>
                   <span className="font-mono text-xs font-bold">{activeOrder.orderNumber}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -1058,9 +1058,9 @@ export default function CatalogPage() {
                   value={trackingSearchQuery}
                   onChange={(e) => setTrackingSearchQuery(e.target.value)}
                   placeholder="Contoh: 08123456789 atau ord_..."
-                  className="h-10 flex-1 rounded-xl border border-[#dedbd0] px-3 text-xs outline-none focus:border-[#b69b00]"
+                  className="h-10 flex-1 rounded-xl border border-[#dedbd0] px-3 text-xs outline-none focus:border-[#E25C00]"
                 />
-                <Button type="submit" size="sm" disabled={isSearchingTracking} className="rounded-xl font-bold bg-[#f4ce00] text-black hover:bg-[#dfba00] px-4">
+                <Button type="submit" size="sm" disabled={isSearchingTracking} className="rounded-xl font-bold bg-[#E25C00] text-white hover:bg-[#c84f00] px-4">
                   {isSearchingTracking ? "Mencari…" : "Cari"}
                 </Button>
               </form>

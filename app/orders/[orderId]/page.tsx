@@ -30,13 +30,25 @@ export default function OrderTrackingPage() {
   const [error, setError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState<number>(15 * 60);
-  const [isSimulating, setIsSimulating] = useState(false);
+  const [storeSettings, setStoreSettings] = useState<{ qris_image_url?: string; qris_merchant_name?: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
   const [isUploadingProof, setIsUploadingProof] = useState(false);
   const [proofUploadError, setProofUploadError] = useState("");
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState("");
   const [previewProofModalOpen, setPreviewProofModalOpen] = useState(false);
+
+  // Load store settings (admin uploaded QRIS & merchant name)
+  useEffect(() => {
+    fetch("/api/settings", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings) {
+          setStoreSettings(data.settings);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Load saved payment proof from localStorage
   useEffect(() => {
@@ -208,9 +220,9 @@ export default function OrderTrackingPage() {
     const orderNumber = order.order_number || order.id;
 
     // Standardized EMVCo QRIS payload representation for Dioleh2 Karika Dieng
-    const qrPayload = `00020101021226670016ID.CO.MIDTRANS.WWW011893600503000008988551440014ID.GO.QRIS.WWW0215ID10203040506010303UME520458125303360540${String(
+    const qrPayload = `00020101021226670016ID.GO.QRIS.WWW011893600503000008988551440014ID.GO.QRIS.WWW0215ID10203040506010303UME520458125303360540${String(
       totalAmount
-    )}.005802ID5919DIOLEH2 DIENG6008WONOSOBO62${String(orderNumber.length).padStart(
+    )}.005802ID5919D OLEH - OLEH6008WONOSOBO62${String(orderNumber.length).padStart(
       2,
       "0"
     )}${orderNumber}6304`;
@@ -243,54 +255,13 @@ export default function OrderTrackingPage() {
     return () => clearInterval(timer);
   }, [order?.payment_status]);
 
-  // Trigger simulated payment
-  const handleSimulatePayment = async () => {
-    if (!order) return;
-    setIsSimulating(true);
-    try {
-      await fetch("/api/midtrans/webhook", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_id: order.order_number,
-          status_code: "200",
-          gross_amount: String(order.total_amount),
-          signature_key: "dummy-simulation-key",
-          transaction_status: "settlement",
-          payment_type: "qris",
-          transaction_id: `dummy_qris_${Date.now()}`,
-        }),
-      });
-
-      // Optimistic local update
-      setOrder((prev) =>
-        prev
-          ? {
-              ...prev,
-              payment_status: "settlement",
-              order_status: "received",
-            }
-          : null
-      );
-
-      // Trigger celebration confetti
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-      } catch {}
-    } catch (e) {
-      console.warn("Simulation webhook failed:", e);
-    } finally {
-      setIsSimulating(false);
-    }
-  };
-
   const copyOrderNumber = () => {
     if (!order) return;
-    navigator.clipboard.writeText(order.order_number);
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(order.order_number).catch(() => {});
+      }
+    } catch {}
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -422,8 +393,8 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
               <span>Cari dengan No. WA</span>
             </Link>
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#292a23] text-[#f4ce00] shadow-xs" title="D OLEH - OLEH">
-                <BrandLogoIcon size={14} color="#f4ce00" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#292a23] text-[#E25C00] shadow-xs" title="D OLEH - OLEH">
+                <BrandLogoIcon size={14} color="#E25C00" />
               </span>
               <span className="text-xs font-black tracking-tight text-[#24251f] hidden sm:inline">
                 D OLEH - OLEH
@@ -445,7 +416,7 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
             </p>
             <Link
               href="/catalog"
-              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#292a23] px-6 py-3 text-sm font-bold text-[#f4ce00] hover:bg-black transition"
+              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#E25C00] px-6 py-3 text-sm font-bold text-white hover:bg-[#c84f00] transition"
             >
               <span>Belanja Kembali</span>
             </Link>
@@ -519,7 +490,7 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                         </a>
                         <Link
                           href="/catalog"
-                          className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-[#f4ce00] hover:bg-black transition"
+                          className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-[#E25C00] hover:bg-black transition"
                         >
                           <span>Pesan Ulang</span>
                         </Link>
@@ -689,7 +660,7 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                                     isPassed
                                       ? "bg-emerald-600 text-white shadow-xs"
                                       : isCurrent
-                                      ? "bg-[#f4ce00] text-black ring-4 ring-amber-100 shadow-md scale-105"
+                                      ? "bg-[#E25C00] text-white ring-4 ring-orange-100 shadow-md scale-105"
                                       : "bg-slate-100 text-slate-400 border border-slate-200"
                                   }`}
                                 >
@@ -795,12 +766,10 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                       {/* Merchant Header */}
                       <div className="bg-slate-50/90 px-4 py-2.5 border-b border-slate-200/80 text-center">
                         <h3 className="text-xs font-black tracking-wide text-slate-900 uppercase">
-                          DIOLEH2 DIENG - OLEH-OLEH KHAS DIENG
+                          {storeSettings?.qris_merchant_name || "D OLEH - OLEH DIENG"}
                         </h3>
                         <div className="flex items-center justify-center gap-2 mt-0.5 text-[10px] text-slate-500">
-                          <span>
-                            NMID: <strong className="font-mono text-slate-700">ID1020304050601</strong>
-                          </span>
+                          <span>Pembayaran QRIS Toko Resmi</span>
                           <span>•</span>
                           <span>Wonosobo</span>
                         </div>
@@ -808,8 +777,14 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
 
                       {/* QR Display */}
                       <div className="p-4 flex flex-col items-center bg-white">
-                        <div className="relative p-2 bg-white rounded-xl border-2 border-slate-200/80 shadow-xs">
-                          {qrDataUrl ? (
+                        <div className="relative p-2 bg-white rounded-xl border-2 border-slate-200/80 shadow-xs max-w-xs flex items-center justify-center">
+                          {storeSettings?.qris_image_url ? (
+                            <img
+                              src={storeSettings.qris_image_url}
+                              alt={`QRIS Toko ${storeSettings.qris_merchant_name || "D OLEH - OLEH"}`}
+                              className="max-h-64 sm:max-h-72 w-auto object-contain rounded-lg"
+                            />
+                          ) : qrDataUrl ? (
                             <img
                               src={qrDataUrl}
                               alt={`QRIS ${order.order_number}`}
@@ -817,21 +792,22 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                             />
                           ) : (
                             <div className="w-48 h-48 sm:w-56 sm:h-56 flex flex-col items-center justify-center bg-slate-50 text-slate-400">
-                              <Flaticon name="spinner" className="animate-spin text-2xl text-amber-500" />
+                              <Flaticon name="spinner" className="animate-spin text-2xl text-[#E25C00]" />
                               <span className="mt-2 text-xs font-semibold">
-                                Membuat QR Code...
+                                Memuat QR Code...
                               </span>
                             </div>
                           )}
 
-                          {/* Center Emblem */}
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="bg-white/95 px-2 py-0.5 rounded border border-red-500 shadow-xs">
-                              <span className="text-[10px] font-black tracking-tight text-red-600">
-                                QRIS
-                              </span>
+                          {!storeSettings?.qris_image_url && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <div className="bg-white/95 px-2 py-0.5 rounded border border-[#E25C00] shadow-xs">
+                                <span className="text-[10px] font-black tracking-tight text-[#E25C00]">
+                                  QRIS
+                                </span>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
 
                         {/* Amount */}
@@ -839,8 +815,11 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                           <p className="text-[11px] font-medium text-slate-500">
                             Total Tagihan Sesuai Pesanan
                           </p>
-                          <p className="text-2xl font-black text-amber-600 tracking-tight">
+                          <p className="text-2xl font-black text-[#E25C00] tracking-tight">
                             Rp{order.total_amount.toLocaleString("id-ID")}
+                          </p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            *Transfer sesuai nominal di atas untuk verifikasi pesanan
                           </p>
                         </div>
 
@@ -860,46 +839,31 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                           </div>
                         </div>
 
-                        {/* Countdown */}
-                        <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                          <Flaticon name="clock" className="text-xs text-amber-500 animate-pulse" />
-                          <span>
-                            Batas Waktu Pembayaran:{" "}
-                            <strong className="font-mono font-bold text-slate-800">
-                              {formattedTime}
-                            </strong>
-                          </span>
+                        {/* Petunjuk Pembayaran */}
+                        <div className="mt-3 w-full rounded-xl bg-orange-50/70 p-3 text-[11px] border border-orange-200/80 space-y-1.5 text-left text-orange-950">
+                          <p className="font-bold text-xs text-[#E25C00] flex items-center gap-1.5">
+                            <Flaticon name="info" variant="sr" className="text-xs" />
+                            <span>Cara Bayar Menggunakan QRIS:</span>
+                          </p>
+                          <ol className="list-decimal list-inside space-y-1 text-slate-700 text-[11px]">
+                            <li>Buka aplikasi m-Banking (BCA, BRImo, Livin Mandiri, dll) atau e-Wallet (GoPay, OVO, DANA, ShopeePay).</li>
+                            <li>Scan barcode QRIS di atas.</li>
+                            <li>Masukkan nominal tagihan: <strong>Rp{order.total_amount.toLocaleString("id-ID")}</strong>.</li>
+                            <li>Setelah transfer selesai, unggah foto bukti transfer di bawah.</li>
+                          </ol>
                         </div>
                       </div>
 
                       {/* Footer supported apps */}
                       <div className="bg-slate-50 px-4 py-2.5 text-center border-t border-slate-100">
                         <p className="text-[9px] text-slate-500 leading-relaxed">
-                          BCA Mobile, Livin&apos; Mandiri, BRImo, GoPay, OVO, DANA, ShopeePay &amp; Seluruh
+                          BCA Mobile, Livin&apos; Mandiri, BRImo, BNI, GoPay, OVO, DANA, ShopeePay &amp; Seluruh
                           Aplikasi Pembayaran QRIS.
                         </p>
                       </div>
                     </div>
 
-                    {/* Simulation & Instant Confirmation Button */}
                     <div className="mt-5 space-y-3">
-                      <button
-                        onClick={handleSimulatePayment}
-                        disabled={isSimulating}
-                        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 py-3.5 px-4 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:brightness-105 active:scale-98 transition cursor-pointer disabled:opacity-50"
-                      >
-                        {isSimulating ? (
-                          <>
-                            <Flaticon name="spinner" className="animate-spin text-sm" />
-                            <span>Memverifikasi Pembayaran...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Flaticon name="check-circle" variant="sr" className="text-sm" />
-                            <span>Konfirmasi / Simulasikan Pembayaran Sukses</span>
-                          </>
-                        )}
-                      </button>
 
                       {/* Area Upload Bukti Transfer QRIS */}
                       <div className="rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/70 p-4 text-left space-y-2.5">
@@ -972,7 +936,7 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                   {/* Header Bar */}
                   <div className="flex items-center justify-between border-b border-amber-100 bg-[#fff9e6] px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <Flaticon name="marker" variant="sr" className="text-base text-[#938126]" />
+                      <Flaticon name="marker" variant="sr" className="text-base text-[#E25C00]" />
                       <span className="text-xs font-bold uppercase tracking-wider text-[#63530f]">
                         Titik Pengantaran &amp; Alamat
                       </span>
@@ -1012,7 +976,7 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                               target="_blank"
                               rel="noreferrer"
                               href={`https://www.google.com/maps/dir/?api=1&destination=${order.coordinates.lat},${order.coordinates.lng}`}
-                              className="inline-flex items-center gap-1.5 rounded-xl bg-[#292a23] px-3.5 py-2 text-xs font-bold text-[#f4ce00] hover:bg-black transition shadow-xs"
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-[#292a23] px-3.5 py-2 text-xs font-bold text-[#E25C00] hover:bg-black transition shadow-xs"
                             >
                               <Flaticon name="marker" variant="sr" className="text-xs" />
                               <span>🧭 Rute Navigasi Google Maps</span>
@@ -1055,7 +1019,7 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                 {/* Items Breakdown */}
                 <div className="border-t border-[#efeee9] pt-5">
                   <p className="mb-3 flex items-center gap-2 font-bold text-sm">
-                    <Flaticon name="box-check" variant="sr" className="text-base text-[#938126]" />
+                    <Flaticon name="box-check" variant="sr" className="text-base text-[#E25C00]" />
                     <span>Rincian Belanja Oleh-Oleh</span>
                   </p>
                   <div className="space-y-2">
@@ -1079,7 +1043,7 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
 
                   <div className="mt-4 flex justify-between items-center border-t border-[#efeee9] pt-4 font-bold text-base">
                     <span>Total Tagihan</span>
-                    <span className="text-xl text-[#938126]">
+                    <span className="text-xl text-[#E25C00]">
                       Rp{order.total_amount.toLocaleString("id-ID")}
                     </span>
                   </div>
@@ -1089,7 +1053,7 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                 <div className="rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-br from-[#fdfbf3] via-amber-50/40 to-white p-4 sm:p-5 text-left space-y-3.5 shadow-xs">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 pb-2.5">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#292a23] to-[#454639] text-[#f4ce00] shadow-2xs">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#292a23] to-[#454639] text-[#E25C00] shadow-2xs">
                         <Flaticon name="camera" className="text-sm" />
                       </div>
                       <div>

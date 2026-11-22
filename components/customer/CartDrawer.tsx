@@ -256,7 +256,7 @@ export default function CartDrawer({ isOpen, onClose, onCheckout }: CartDrawerPr
               onClick={handleProceedCheckout}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 py-3 text-xs sm:text-sm font-bold text-white shadow-sm shadow-amber-500/30 hover:brightness-105 active:scale-98 transition-all"
             >
-              <span>Bayar via QRIS / Midtrans</span>
+              <span>Bayar via QRIS / Transfer</span>
               <Flaticon name="arrow-right" className="text-sm" />
             </button>
           </div>

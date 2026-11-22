@@ -24,6 +24,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (paymentProof.length > 7000000) {
+      return NextResponse.json(
+        { error: "Ukuran file bukti pembayaran terlalu besar (maksimal 5MB)" },
+        { status: 413 }
+      );
+    }
+
     const order = await getOrderById(orderId);
     if (!order) {
       return NextResponse.json(

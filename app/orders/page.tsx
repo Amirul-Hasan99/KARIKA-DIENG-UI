@@ -149,13 +149,13 @@ function OrdersContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f7f2] text-[#24251f] selection:bg-[#f4ce00] selection:text-black">
+    <div className="min-h-screen bg-[#f8f7f2] text-[#24251f] selection:bg-[#E25C00] selection:text-white">
       {/* Top Navbar */}
       <header className="sticky top-0 z-20 border-b border-[#e9e7dc] bg-[#f8f7f2]/95 backdrop-blur-md">
         <nav className="mx-auto flex h-[68px] max-w-5xl items-center justify-between px-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#292a23] text-[#f4ce00] shadow-xs">
-              <BrandLogoIcon size={18} color="#f4ce00" />
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#292a23] text-[#E25C00] shadow-xs">
+              <BrandLogoIcon size={18} color="#E25C00" />
             </span>
             <div className="flex flex-col">
               <span className="text-lg font-black tracking-tight text-[#24251f]">
@@ -224,13 +224,13 @@ function OrdersContent() {
                   value={phoneQuery}
                   onChange={(e) => setPhoneQuery(e.target.value)}
                   placeholder="Contoh: 08123456789 atau ORD-..."
-                  className="h-12 w-full rounded-2xl border border-[#d8d5c7] bg-[#faf9f5] pl-11 pr-4 text-sm font-semibold text-[#24251f] outline-none transition focus:border-[#90802a] focus:bg-white"
+                  className="h-12 w-full rounded-2xl border border-[#d8d5c7] bg-[#faf9f5] pl-11 pr-4 text-sm font-semibold text-[#24251f] outline-none transition focus:border-[#E25C00] focus:bg-white"
                 />
               </div>
               <Button
                 type="submit"
                 disabled={isSearching}
-                className="h-12 rounded-2xl bg-[#292a23] hover:bg-black px-6 text-sm font-bold text-white transition shadow-xs disabled:opacity-50"
+                className="h-12 rounded-2xl bg-[#E25C00] hover:bg-[#c84f00] px-6 text-sm font-bold text-white transition shadow-xs disabled:opacity-50"
               >
                 {isSearching ? (
                   <>
@@ -260,7 +260,7 @@ function OrdersContent() {
           <div className="mt-8">
             <div className="flex items-center justify-between mb-2 px-1">
               <span className="text-xs font-bold uppercase tracking-wider text-[#79776f] flex items-center gap-1.5">
-                <Flaticon name="time-fast" className="text-xs text-[#90802a]" />
+                <Flaticon name="time-fast" className="text-xs text-[#E25C00]" />
                 Pesanan Terakhir di Perangkat Ini
               </span>
               <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
@@ -272,7 +272,7 @@ function OrdersContent() {
               <CardHeader className="p-5 sm:p-6 pb-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <span className="font-mono text-xs font-black text-[#90802a]">
+                    <span className="font-mono text-xs font-black text-[#E25C00]">
                       #{savedOrder.orderNumber}
                     </span>
                     <CardTitle className="text-base font-extrabold text-[#24251f] mt-0.5">
@@ -352,11 +352,11 @@ function OrdersContent() {
                       </div>
 
                       <div className="text-left sm:text-right">
-                        <span className="text-xs font-black text-[#90802a] text-lg block">
+                        <span className="text-xs font-black text-[#E25C00] text-lg block">
                           {formatRupiah(ord.total_amount)}
                         </span>
                         <span className="text-[11px] text-[#78776f]">
-                          Metode: {ord.payment_type === "cash" ? "Bayar Tunai (COD)" : "QRIS Midtrans"}
+                          Metode: {ord.payment_type === "cash" ? "Bayar Tunai (COD)" : "QRIS"}
                         </span>
                       </div>
                     </div>

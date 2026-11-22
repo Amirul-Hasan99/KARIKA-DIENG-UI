@@ -118,11 +118,11 @@ export default function AdminDeliveryPage() {
             <>
               {orders.length >= 2 && (
                 <div className="flex sm:hidden items-center justify-between text-[11px] text-slate-500 mb-2.5 px-1">
-                  <span className="flex items-center gap-1 font-bold text-[#857200]">
+                  <span className="flex items-center gap-1 font-bold text-[#E25C00]">
                     <Flaticon name="truck-side" className="text-xs" />
                     <span>{orders.length} Pesanan Pengantaran</span>
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] text-[#857200] bg-[#faf8ed] border border-[#ecd983] px-2.5 py-0.5 rounded-full font-semibold shadow-2xs">
+                  <span className="flex items-center gap-1 text-[10px] text-[#E25C00] bg-orange-50 border border-orange-200 px-2.5 py-0.5 rounded-full font-semibold shadow-2xs">
                     <span>2 Card ke bawah • Geser ke kanan</span>
                     <Flaticon name="arrow-right" className="text-[10px]" />
                   </span>
@@ -170,7 +170,7 @@ export default function AdminDeliveryPage() {
 
                 <div className="grid gap-4 border-t border-[#efeee9] pt-4 sm:grid-cols-[1fr_auto]">
                   <div className="flex gap-3">
-                    <Flaticon name="marker" variant="sr" className="mt-0.5 text-base text-[#938126]" />
+                    <Flaticon name="marker" variant="sr" className="mt-0.5 text-base text-[#E25C00]" />
                     <div>
                       <p className="text-sm font-medium leading-relaxed">
                         {order.delivery_address || "Alamat belum tercatat"}
@@ -183,7 +183,7 @@ export default function AdminDeliveryPage() {
                           <a
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 font-semibold text-[#655700] hover:underline"
+                            className="inline-flex items-center gap-1 font-semibold text-[#E25C00] hover:underline"
                             href={`https://www.google.com/maps/search/?api=1&query=${order.coordinates.lat},${order.coordinates.lng}`}
                           >
                             <Flaticon name="arrow-up-right-from-square" className="text-xs" />
@@ -205,7 +205,7 @@ export default function AdminDeliveryPage() {
 
                 <div className="flex flex-col gap-3 border-t border-[#efeee9] pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 text-xs font-semibold text-[#57564d]">
-                    <Flaticon name="truck-side" variant="sr" className="text-sm text-[#82700a]" />
+                    <Flaticon name="truck-side" variant="sr" className="text-sm text-[#E25C00]" />
                     <span>Tahap Pengiriman:</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -221,7 +221,7 @@ export default function AdminDeliveryPage() {
                       aria-label="Status pengiriman"
                       value={order.delivery_status || "pending"}
                       onChange={(e) => void setStatus(order, e.target.value)}
-                      className="rounded-xl border border-[#e4e1d7] bg-white px-3.5 py-2 text-xs font-bold outline-none focus:border-[#b69b00]"
+                      className="rounded-xl border border-[#e4e1d7] bg-white px-3.5 py-2 text-xs font-bold outline-none focus:border-[#E25C00]"
                     >
                       {Object.entries(deliveries).map(([value, label]) => (
                         <option value={value} key={value}>

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -23,7 +22,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#F4CE00",
+  themeColor: "#E25C00",
 };
 
 export default function RootLayout({
@@ -31,12 +30,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
-  const snapScriptUrl =
-    process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
-      ? "https://app.midtrans.com/snap/snap.js"
-      : "https://app.sandbox.midtrans.com/snap/snap.js";
-
   return (
     <html lang="id">
       <head>
@@ -46,11 +39,6 @@ export default function RootLayout({
       </head>
       <body className={`${plusJakarta.variable} font-sans min-h-screen bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground`}>
         {children}
-        {midtransClientKey && <Script
-          src={snapScriptUrl}
-          data-client-key={midtransClientKey}
-          strategy="lazyOnload"
-        />}
       </body>
     </html>
   );

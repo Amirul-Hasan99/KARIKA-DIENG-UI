@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { formatRupiah } from "@/lib/utils";
 import { Order } from "@/types";
-import { TrendingUp, Calendar, AlertCircle } from "@/components/ui/FlaticonCompat";
+import Flaticon from "@/components/ui/Flaticon";
 
 // Dynamically import echarts-for-react to prevent SSR hydration and canvas sizing issues in Next.js App Router
 const ReactECharts = dynamic(() => import("echarts-for-react"), {
@@ -351,7 +351,7 @@ export const AdminRevenueChart: React.FC<AdminRevenueChartProps> = ({
               Statistik Pendapatan
             </h3>
             <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200">
-              <TrendingUp className="h-3 w-3" />
+              <Flaticon name="chart-histogram" className="text-xs text-amber-600" />
               <span>{formatRupiah(totalRevenue)}</span>
             </span>
           </div>
@@ -389,7 +389,7 @@ export const AdminRevenueChart: React.FC<AdminRevenueChartProps> = ({
       ) : orders.length === 0 ? (
         <div className="h-[280px] w-full flex flex-col items-center justify-center border border-dashed border-slate-200 rounded-xl bg-slate-50/40 p-6 text-center">
           <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
-            <Calendar className="h-5 w-5" />
+            <Flaticon name="calendar" className="text-lg text-slate-400" />
           </div>
           <p className="text-xs font-bold text-slate-700">Belum Ada Riwayat Transaksi</p>
           <p className="text-[11px] text-slate-400 mt-1 max-w-xs">

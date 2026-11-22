@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSnapTransaction } from "@/lib/midtrans";
 import { Order, OrderItem } from "@/types";
 import { saveOrder } from "@/lib/order-store";
 import { generateOrderNumber } from "@/lib/utils";
@@ -78,33 +77,26 @@ export async function POST(req: NextRequest) {
     const totalAmount = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
     const orderNumber = generateOrderNumber("DELIVERY");
     const orderId = `ord_${crypto.randomUUID()}`;
-    let snapToken = "", redirectUrl = "", isDummy = false;
 
-    if (paymentType === "qris") {
-      try {
-        const payment = await createSnapTransaction({
-          orderId: orderNumber,
-          grossAmount: totalAmount,
-          items: orderItems.map((item) => ({ id: item.menu_id, price: item.price, quantity: item.qty, name: item.name.substring(0, 50) })),
-          customer: { first_name: customerName.trim().substring(0, 50), phone: customerPhone.trim() },
-        });
-        snapToken = payment.token || `snap-dummy-${orderNumber}`;
-        redirectUrl = payment.redirect_url || `/orders/${orderId}?payment=qris`;
-        isDummy = Boolean(payment.isDummy || payment.isSimulated);
-      } catch (snapErr) {
-        console.warn("[checkout] Midtrans error, falling back to dummy QRIS:", snapErr);
-        snapToken = `snap-dummy-${orderNumber}`;
-        redirectUrl = `/orders/${orderId}?payment=qris`;
-        isDummy = true;
-      }
-    }
     const now = new Date().toISOString();
     const order = {
-      id: orderId, order_number: orderNumber, table_id: "delivery", table_number: "delivery", customer_name: customerName.trim(), customer_phone: customerPhone.trim(),
-      delivery_address: address.trim(), coordinates, delivery_distance_km: Number(distance.toFixed(2)),
-      items: orderItems, total_amount: totalAmount, payment_status: "pending", order_status: "received",
-      delivery_status: "pending", payment_type: paymentType, snap_token: snapToken, snap_redirect_url: redirectUrl,
-      created_at: now, updated_at: now,
+      id: orderId,
+      order_number: orderNumber,
+      table_id: "delivery",
+      table_number: "delivery",
+      customer_name: customerName.trim(),
+      customer_phone: customerPhone.trim(),
+      delivery_address: address.trim(),
+      coordinates,
+      delivery_distance_km: Number(distance.toFixed(2)),
+      items: orderItems,
+      total_amount: totalAmount,
+      payment_status: "pending",
+      order_status: "received",
+      delivery_status: "pending",
+      payment_type: paymentType,
+      created_at: now,
+      updated_at: now,
     } satisfies Order;
     await saveOrder(order);
     return NextResponse.json({
@@ -112,10 +104,7 @@ export async function POST(req: NextRequest) {
       orderId,
       orderNumber,
       paymentType,
-      snapToken,
-      redirectUrl,
       totalAmount,
-      isDummy,
       deliveryDistanceKm: Number(distance.toFixed(2)),
       coordinates,
       address: address.trim(),
