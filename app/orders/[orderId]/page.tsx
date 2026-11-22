@@ -393,8 +393,8 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
               <span>Cari dengan No. WA</span>
             </Link>
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#292a23] text-[#E25C00] shadow-xs" title="D OLEH - OLEH">
-                <BrandLogoIcon size={14} color="#E25C00" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-[#e8e5dc] shadow-xs overflow-hidden shrink-0 p-0.5" title="D OLEH - OLEH">
+                <BrandLogoIcon size={26} />
               </span>
               <span className="text-xs font-black tracking-tight text-[#24251f] hidden sm:inline">
                 D OLEH - OLEH

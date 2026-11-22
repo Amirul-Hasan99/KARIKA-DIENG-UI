@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "D OLEH - OLEH — Oleh-Oleh Wonosobo & Manisan Carica Asli",
   description: "Pesan oleh-oleh khas Dieng dan Wonosobo: Carica Delicia, Mie Ongklok, Keripik Jamur, dan Purwaceng. Pengantaran hingga radius 8 km dari Titik 0 Dieng.",
   icons: {
-    icon: "/logo.svg",
+    icon: "/images/logo-d-oleh2.png",
   },
 };
 

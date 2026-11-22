@@ -1281,10 +1281,10 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <Link
               href="/"
-              className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#292a23] to-[#454639] text-[#E25C00] shadow-md shadow-black/10 hover:opacity-95 transition"
+              className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-white border border-[#e8e5dc] shadow-sm hover:opacity-95 transition overflow-hidden p-1"
               title="D OLEH - OLEH — Beranda"
             >
-              <BrandLogoIcon size={24} color="#E25C00" />
+              <BrandLogoIcon size={38} />
             </Link>
             <div className="min-w-0 hidden sm:block">
               <div className="flex items-center gap-1.5 sm:gap-2">

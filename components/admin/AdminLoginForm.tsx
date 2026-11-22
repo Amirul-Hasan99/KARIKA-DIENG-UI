@@ -49,8 +49,8 @@ export default function AdminLoginForm() {
         </Link>
         <Card className="rounded-3xl shadow-sm border border-[#e8e5dc]">
           <CardHeader className="space-y-4 p-7 pb-5 sm:p-8 sm:pb-5">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#292a23] text-[#E25C00] shadow-sm">
-              <BrandLogoIcon size={24} color="#E25C00" />
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white border border-[#e8e5dc] shadow-xs overflow-hidden p-1.5">
+              <BrandLogoIcon size={42} />
             </div>
             <div>
               <CardTitle className="text-2xl font-bold tracking-tight">

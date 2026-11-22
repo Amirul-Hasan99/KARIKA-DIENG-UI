@@ -17,7 +17,7 @@ import { Flaticon } from "@/components/ui/Flaticon";
 import { BrandLogoIcon } from "@/components/ui/BrandLogo";
 import { INITIAL_KARIKA_PRODUCTS, KarikaProduct } from "@/lib/karika-products-data";
 
-const heroImage = "/images/hero-dieng.jpg";
+const heroImage = "/images/logo-d-oleh2.png";
 
 const featuredProducts = [
   {
@@ -187,8 +187,8 @@ export default function HomePage() {
               className="flex items-center gap-2 sm:gap-2.5 group"
               title="D OLEH - OLEH"
             >
-              <span className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl bg-[#292a23] text-[#E25C00] shadow-sm transition group-hover:bg-black shrink-0">
-                <BrandLogoIcon size={18} color="#E25C00" />
+              <span className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl sm:rounded-2xl bg-white border border-[#e8e5dc] shadow-xs overflow-hidden shrink-0 p-1">
+                <BrandLogoIcon size={34} />
               </span>
               <div className="flex flex-col">
                 <span className="text-base xs:text-lg sm:text-2xl font-black tracking-tight text-[#24251f] whitespace-nowrap">
@@ -365,38 +365,37 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right Column: Hero Visual Card with Landmarks */}
+            {/* Right Column: Hero Visual Card with Brand Logo */}
             <div className="lg:col-span-5">
               <div className="relative isolate mx-auto w-full max-w-md lg:max-w-none">
                 {/* Decorative background glow */}
-                <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-[#E25C00]/25 via-[#fed7aa]/30 to-transparent blur-xl -z-10" />
+                <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-[#E25C00]/20 via-[#fed7aa]/25 to-transparent blur-xl -z-10" />
 
-                <div className="relative aspect-[4/5] sm:aspect-[4/4.5] overflow-hidden rounded-[2.25rem] border border-[#d8d4c5] bg-[#222824] shadow-2xl">
+                <div className="relative aspect-[4/5] sm:aspect-[4/4.5] overflow-hidden rounded-[2.25rem] border-2 border-[#e7e4d8] bg-white shadow-2xl flex items-center justify-center p-6 sm:p-10">
                   <Image
                     src={heroImage}
-                    alt="Tugu Titik 0 Dieng Wonosobo"
+                    alt="Logo Resmi D OLEH2 Wonosobo Dieng"
                     fill
                     priority
                     unoptimized
                     sizes="(max-width: 1024px) 100vw, 40vw"
-                    className="object-cover transition duration-700 hover:scale-105"
+                    className="object-contain p-6 sm:p-10 transition duration-700 hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
 
-                  {/* Top Badge on image */}
+                  {/* Top Badge on card */}
                   <div className="absolute top-5 left-5 right-5 flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50/90 px-3.5 py-1.5 text-xs font-bold text-[#E25C00] shadow-2xs backdrop-blur-md">
                       <Flaticon name="compass" variant="rr" className="text-xs text-[#E25C00]" />
                       Titik 0 Km Dieng
                     </span>
                   </div>
 
-                  {/* Bottom Captions on image */}
-                  <div className="absolute bottom-6 left-6 right-6 text-white space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#E25C00]">
+                  {/* Bottom Captions on card */}
+                  <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/95 backdrop-blur-md p-3.5 sm:p-4 text-center border border-[#e8e5dc] shadow-xs">
+                    <p className="text-xs sm:text-sm font-black uppercase tracking-[0.15em] text-[#E25C00]">
                       D' Oleh-Oleh
                     </p>
-                    <p className="text-xs text-white/80 leading-relaxed pt-1">
+                    <p className="text-xs text-[#5c5a52] font-semibold leading-relaxed pt-0.5">
                       Pesan sekarang dan nikmati waktu liburan Anda di Dieng.
                     </p>
                   </div>
@@ -566,8 +565,8 @@ export default function HomePage() {
                   INFORMASI
                 </span>
                 <Link href="/" className="inline-flex items-center gap-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#292a23] text-[#E25C00] shadow-xs">
-                    <BrandLogoIcon size={18} color="#E25C00" />
+                  <span className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white border border-[#e8e5dc] shadow-xs overflow-hidden shrink-0 p-1">
+                    <BrandLogoIcon size={34} />
                   </span>
                   <span className="text-xl font-black tracking-tight text-[#24251f]">
                     D OLEH - OLEH

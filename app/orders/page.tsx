@@ -154,8 +154,8 @@ function OrdersContent() {
       <header className="sticky top-0 z-20 border-b border-[#e9e7dc] bg-[#f8f7f2]/95 backdrop-blur-md">
         <nav className="mx-auto flex h-[68px] max-w-5xl items-center justify-between px-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#292a23] text-[#E25C00] shadow-xs">
-              <BrandLogoIcon size={18} color="#E25C00" />
+            <span className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white border border-[#e8e5dc] shadow-xs overflow-hidden shrink-0 p-1">
+              <BrandLogoIcon size={32} />
             </span>
             <div className="flex flex-col">
               <span className="text-lg font-black tracking-tight text-[#24251f]">

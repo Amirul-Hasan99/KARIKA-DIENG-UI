@@ -1,7 +1,7 @@
 import React from "react";
 
 export function BrandLogoIcon({
-  className = "w-5 h-5",
+  className = "w-full h-full object-contain",
   size,
   color,
 }: {
@@ -11,11 +11,14 @@ export function BrandLogoIcon({
 }) {
   return (
     <img
-      src="/images/logo-d-oleh2.jpg"
+      src="/images/logo-d-oleh2.png"
       alt="D OLEH2"
       className={className}
-      style={size ? { width: size, height: size, objectFit: "contain" } : { objectFit: "contain" }}
-      aria-hidden="true"
+      style={
+        size
+          ? { width: size, height: "auto", maxHeight: size, objectFit: "contain" }
+          : { objectFit: "contain" }
+      }
     />
   );
 }
@@ -28,21 +31,21 @@ export function BrandLogoBadge({
   className?: string;
 }) {
   const sizeClasses = {
-    sm: "h-7 w-7 rounded-lg",
-    md: "h-8 w-8 sm:h-9 sm:w-9 rounded-xl",
-    lg: "h-10 w-10 sm:h-12 sm:w-12 rounded-2xl",
+    sm: "h-8 w-8 rounded-lg",
+    md: "h-10 w-10 sm:h-11 sm:w-11 rounded-xl",
+    lg: "h-12 w-12 sm:h-14 sm:w-14 rounded-2xl",
   };
   const iconSizes = {
-    sm: 14,
-    md: 18,
-    lg: 24,
+    sm: 24,
+    md: 32,
+    lg: 42,
   };
 
   return (
     <span
-      className={`inline-flex items-center justify-center bg-[#292a23] text-[#E25C00] shadow-xs shrink-0 ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center bg-white border border-[#e8e5dc] shadow-xs shrink-0 p-1 overflow-hidden ${sizeClasses[size]} ${className}`}
     >
-      <BrandLogoIcon size={iconSizes[size]} color="#E25C00" />
+      <BrandLogoIcon size={iconSizes[size]} />
     </span>
   );
 }
