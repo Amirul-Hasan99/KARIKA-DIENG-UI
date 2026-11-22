@@ -1,6 +1,10 @@
 const { Pool } = require('pg');
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_An3OriHysUC0@ep-snowy-haze-at8e3hc2.us-east-1.aws.neon.tech/KARIKA?sslmode=require';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  console.error('Error: DATABASE_URL environment variable is required.');
+  process.exit(1);
+}
 
 // Parse connection or use connectionString
 const pool = new Pool({

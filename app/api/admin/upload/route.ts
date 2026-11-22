@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { isAdminSessionValid } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +10,14 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export async function POST(req: Request) {
   try {
-    // 1. Verifikasi autentikasi sesi admin
+    // 1. Verifikasi autentikasi sesi admin (HMAC-SHA256)
     const cookieHeader = req.headers.get("cookie") || "";
-    if (!cookieHeader.includes("dioleh2_admin_session=")) {
+    const sessionMatch = cookieHeader.match(/dioleh2_admin_session=([^;]+)/);
+    const sessionToken = sessionMatch ? sessionMatch[1] : undefined;
+    const isAuthorized = await isAdminSessionValid(sessionToken);
+    if (!isAuthorized) {
       return NextResponse.json(
-        { success: false, error: "Akses ditolak: Hanya admin yang dapat mengunggah gambar" },
+        { success: false, error: "Akses ditolak: Hanya admin dengan sesi valid yang dapat mengunggah gambar" },
         { status: 401 }
       );
     }

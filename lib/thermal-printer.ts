@@ -1,5 +1,5 @@
 import { Order } from "@/types";
-import { formatRupiah, formatOrderTime } from "./utils";
+import { formatRupiah, formatOrderTime, escapeHtml } from "./utils";
 
 export interface PrintOptions {
   paperWidth?: "58mm" | "80mm";
@@ -154,16 +154,16 @@ export function printReceiptViaBrowser(order: Order, options?: PrintOptions) {
         </style>
       </head>
       <body>
-        <div class="center bold" style="font-size: 13px;">${options?.storeName || "D OLEH - OLEH"}</div>
-        <div class="center" style="font-size: 10px;">${options?.storeAddress || "Sentra Oleh-Oleh Khas Dieng"}</div>
+        <div class="center bold" style="font-size: 13px;">${escapeHtml(options?.storeName || "D OLEH - OLEH")}</div>
+        <div class="center" style="font-size: 10px;">${escapeHtml(options?.storeAddress || "Sentra Oleh-Oleh Khas Dieng")}</div>
         <div class="center" style="font-size: 9px;">Titik 0 Km Dieng · Layanan Antar 8 km</div>
         <div class="double-divider"></div>
         
-        <div class="row"><span class="bold">Order: #${order.order_number}</span><span>${order.delivery_distance_km ? `${order.delivery_distance_km} km` : "Dieng"}</span></div>
-        <div class="row"><span>Waktu:</span><span>${formatOrderTime(order.created_at)}</span></div>
-        ${order.customer_name ? `<div class="row"><span>Penerima:</span><span class="bold">${order.customer_name}</span></div>` : ""}
-        ${order.customer_phone ? `<div class="row"><span>WhatsApp:</span><span>${order.customer_phone}</span></div>` : ""}
-        ${order.delivery_address ? `<div style="font-size: 10px; margin-top: 2px;"><strong>Patokan Alamat:</strong> ${order.delivery_address}</div>` : ""}
+        <div class="row"><span class="bold">Order: #${escapeHtml(order.order_number)}</span><span>${order.delivery_distance_km ? `${order.delivery_distance_km} km` : "Dieng"}</span></div>
+        <div class="row"><span>Waktu:</span><span>${escapeHtml(formatOrderTime(order.created_at))}</span></div>
+        ${order.customer_name ? `<div class="row"><span>Penerima:</span><span class="bold">${escapeHtml(order.customer_name)}</span></div>` : ""}
+        ${order.customer_phone ? `<div class="row"><span>WhatsApp:</span><span>${escapeHtml(order.customer_phone)}</span></div>` : ""}
+        ${order.delivery_address ? `<div style="font-size: 10px; margin-top: 2px;"><strong>Patokan Alamat:</strong> ${escapeHtml(order.delivery_address)}</div>` : ""}
         ${order.coordinates ? `<div style="font-size: 9px; color: #444;">Titik Maps: ${order.coordinates.lat.toFixed(5)}, ${order.coordinates.lng.toFixed(5)}</div>` : ""}
         <div class="divider"></div>
 
@@ -171,7 +171,7 @@ export function printReceiptViaBrowser(order: Order, options?: PrintOptions) {
           .map(
             (item) => `
           <div class="row bold">
-            <span>${item.qty}x ${item.name}</span>
+            <span>${item.qty}x ${escapeHtml(item.name)}</span>
             <span>${formatRupiah(item.subtotal)}</span>
           </div>
           ${
@@ -179,14 +179,14 @@ export function printReceiptViaBrowser(order: Order, options?: PrintOptions) {
               ? item.selected_modifiers
                   .map(
                     (m) =>
-                      `<div class="mod-item">• ${m.option_name} ${
+                      `<div class="mod-item">• ${escapeHtml(m.option_name)} ${
                         m.price_modifier > 0 ? `(+${formatRupiah(m.price_modifier)})` : ""
                       }</div>`
                   )
                   .join("")
               : ""
           }
-          ${item.notes ? `<div class="mod-item">Catatan: ${item.notes}</div>` : ""}
+          ${item.notes ? `<div class="mod-item">Catatan: ${escapeHtml(item.notes)}</div>` : ""}
         `
           )
           .join("")}
@@ -202,12 +202,12 @@ export function printReceiptViaBrowser(order: Order, options?: PrintOptions) {
         </div>
         ${
           order.payment_type
-            ? `<div class="row"><span>Metode:</span><span>${order.payment_type.toUpperCase()}</span></div>`
+            ? `<div class="row"><span>Metode:</span><span>${escapeHtml(order.payment_type.toUpperCase())}</span></div>`
             : ""
         }
         <div class="double-divider"></div>
         <div class="center" style="font-size: 10px; margin-top: 6px;">
-          ${options?.footerNote || "MATUR NUWUN / TERIMA KASIH"}<br/>
+          ${escapeHtml(options?.footerNote || "MATUR NUWUN / TERIMA KASIH")}<br/>
           Pusat Pengantaran Oleh-Oleh Dieng
         </div>
       </body>

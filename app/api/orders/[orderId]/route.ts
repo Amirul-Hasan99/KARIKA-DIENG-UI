@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OrderStatus } from "@/types";
 import { getOrderById, updateOrderStatus, updateOrderDeliveryStatus } from "@/lib/order-store";
+import { verifyAdminSessionFromRequest } from "@/lib/auth";
 
 export async function GET(
   req: NextRequest,
@@ -25,9 +26,9 @@ export async function PATCH(
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    // Authorization check: Only admin can update order status
-    const adminCookie = req.cookies.get("dioleh2_admin_session");
-    if (!adminCookie) {
+    // Authorization check: Cryptographically verify admin session HMAC
+    const isAuthorized = await verifyAdminSessionFromRequest(req);
+    if (!isAuthorized) {
       return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
     }
 

@@ -1,8 +1,10 @@
 const { neon } = require('@neondatabase/serverless');
 
-// We test both direct and pooler
-const poolerUrl = 'postgresql://neondb_owner:npg_An3OriHysUC0@ep-snowy-haze-at8e3hc2-pooler.c-9.us-east-1.aws.neon.tech/KARIKA?sslmode=require&channel_binding=require';
-const directUrl = 'postgresql://neondb_owner:npg_An3OriHysUC0@ep-snowy-haze-at8e3hc2.us-east-1.aws.neon.tech/KARIKA?sslmode=require';
+const connectionUrl = process.env.DATABASE_URL;
+if (!connectionUrl) {
+  console.error('Error: DATABASE_URL environment variable is required to run this script.');
+  process.exit(1);
+}
 
 async function testConnection(url, label) {
   try {
@@ -18,13 +20,10 @@ async function testConnection(url, label) {
 }
 
 async function main() {
-  let sql = await testConnection(directUrl, 'Direct Neon Host');
-  if (!sql) {
-    sql = await testConnection(poolerUrl, 'Pooler Neon Host');
-  }
+  const sql = await testConnection(connectionUrl, 'Neon Database');
 
   if (!sql) {
-    throw new Error('Both Neon connections failed.');
+    throw new Error('Neon database connection failed.');
   }
 
   console.log('Creating orders table if not exists...');

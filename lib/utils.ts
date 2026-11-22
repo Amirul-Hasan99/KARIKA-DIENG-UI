@@ -5,6 +5,56 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Escapes characters with special meaning in HTML to prevent XSS.
+ */
+export function escapeHtml(str: any): string {
+  if (str === null || str === undefined) return "";
+  const s = String(str);
+  return s.replace(/[&<>"']/g, (char) => {
+    switch (char) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#039;";
+      default:
+        return char;
+    }
+  });
+}
+
+/**
+ * Masks phone numbers to protect customer PII (e.g. 0831****6357).
+ */
+export function maskPhone(phone?: string): string {
+  if (!phone) return "-";
+  const cleaned = phone.replace(/\D/g, "");
+  if (cleaned.length < 8) return phone;
+  const start = cleaned.slice(0, 4);
+  const end = cleaned.slice(-4);
+  return `${start}****${end}`;
+}
+
+/**
+ * Masks customer name to protect privacy (e.g. Budi Santoso -> B*** S******).
+ */
+export function maskName(name?: string): string {
+  if (!name) return "Pelanggan";
+  const parts = name.trim().split(/\s+/);
+  return parts
+    .map((word) => {
+      if (word.length <= 2) return word;
+      return word[0] + "*".repeat(word.length - 2) + word[word.length - 1];
+    })
+    .join(" ");
+}
+
 export function formatRupiah(amount: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",

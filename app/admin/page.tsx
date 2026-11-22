@@ -7,7 +7,7 @@ import Link from "next/link";
 import { BrandLogoIcon } from "@/components/ui/BrandLogo";
 import { useKitchenOrders } from "@/hooks/useKitchenOrders";
 import { Order, OrderStatus, MenuItem, Category } from "@/types";
-import { formatOrderTime, formatRupiah } from "@/lib/utils";
+import { formatOrderTime, formatRupiah, escapeHtml } from "@/lib/utils";
 import { printReceiptViaBrowser } from "@/lib/thermal-printer";
 import Flaticon from "@/components/ui/Flaticon";
 import { KarikaProduct, INITIAL_KARIKA_PRODUCTS, KARIKA_CATEGORIES } from "@/lib/karika-products-data";
@@ -1150,20 +1150,20 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
         (o, idx) => `
         <tr>
           <td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center;">${idx + 1}</td>
-          <td style="padding: 7px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold;">${o.order_number}</td>
+          <td style="padding: 7px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold;">${escapeHtml(o.order_number)}</td>
           <td style="padding: 7px; border: 1px solid #cbd5e1;">${new Date(o.created_at).toLocaleString("id-ID")}</td>
           <td style="padding: 7px; border: 1px solid #cbd5e1;">
-            <strong>${o.customer_name || "Pelanggan"}</strong><br/>
-            <span style="font-size: 11px; color: #475569;">${o.customer_phone || "-"}</span>
+            <strong>${escapeHtml(o.customer_name || "Pelanggan")}</strong><br/>
+            <span style="font-size: 11px; color: #475569;">${escapeHtml(o.customer_phone || "-")}</span>
           </td>
           <td style="padding: 7px; border: 1px solid #cbd5e1; font-size: 11px;">
-            ${o.delivery_address || "Kawasan Dataran Tinggi Dieng"}
+            ${escapeHtml(o.delivery_address || "Kawasan Dataran Tinggi Dieng")}
           </td>
           <td style="padding: 7px; border: 1px solid #cbd5e1; font-size: 11px;">
-            ${o.items.map((i) => `${i.qty}x ${i.name}`).join("<br/>")}
+            ${o.items.map((i) => `${i.qty}x ${escapeHtml(i.name)}`).join("<br/>")}
           </td>
           <td style="padding: 7px; border: 1px solid #cbd5e1; text-transform: uppercase; font-size: 11px;">
-            ${o.payment_type || "QRIS"}
+            ${escapeHtml(o.payment_type || "QRIS")}
           </td>
           <td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center; font-size: 11px;">
             <span style="padding: 2px 6px; border-radius: 4px; font-weight: bold; background: ${

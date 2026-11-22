@@ -115,10 +115,10 @@ try {
   }
 } catch (err) {}
 
-async function saveOrderToNeon(order: Order) {
+async function saveOrderToNeon(order: Order): Promise<boolean> {
   try {
     const sql = getNeonSql();
-    if (!sql) return;
+    if (!sql || global.__neonReachable === false) return false;
     await ensureNeonTables();
 
     const writePromise = sql`
@@ -127,7 +127,8 @@ async function saveOrderToNeon(order: Order) {
         customer_name, customer_phone, delivery_address, coordinates,
         delivery_distance_km, total_amount, payment_status, order_status,
         delivery_status, payment_type, midtrans_transaction_id, snap_token,
-        snap_redirect_url, items, created_at, updated_at
+        snap_redirect_url, items, payment_proof_url, payment_proof_uploaded_at,
+        courier_id, courier_name, courier_phone, created_at, updated_at
       ) VALUES (
         ${order.id},
         ${order.order_number},
@@ -148,6 +149,11 @@ async function saveOrderToNeon(order: Order) {
         ${order.snap_token || null},
         ${order.snap_redirect_url || null},
         ${JSON.stringify(order.items || [])}::jsonb,
+        ${order.payment_proof_url || null},
+        ${order.payment_proof_uploaded_at || null},
+        ${order.courier_id || null},
+        ${order.courier_name || null},
+        ${order.courier_phone || null},
         ${order.created_at || new Date().toISOString()},
         ${order.updated_at || new Date().toISOString()}
       )
@@ -158,36 +164,74 @@ async function saveOrderToNeon(order: Order) {
         delivery_address = EXCLUDED.delivery_address,
         coordinates = EXCLUDED.coordinates,
         delivery_distance_km = EXCLUDED.delivery_distance_km,
-        midtrans_transaction_id = EXCLUDED.midtrans_transaction_id,
+        payment_proof_url = COALESCE(EXCLUDED.payment_proof_url, orders.payment_proof_url),
+        payment_proof_uploaded_at = COALESCE(EXCLUDED.payment_proof_uploaded_at, orders.payment_proof_uploaded_at),
+        courier_id = COALESCE(EXCLUDED.courier_id, orders.courier_id),
+        courier_name = COALESCE(EXCLUDED.courier_name, orders.courier_name),
+        courier_phone = COALESCE(EXCLUDED.courier_phone, orders.courier_phone),
         updated_at = EXCLUDED.updated_at
     `;
 
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Neon query timeout (2000ms)')), 2000)
+      setTimeout(() => reject(new Error('Neon query timeout (6000ms)')), 6000)
     );
 
     await Promise.race([writePromise, timeoutPromise]);
+    return true;
   } catch (err: any) {
-    // Non-blocking fallback to disk and memory
-    console.warn("[order-store] Neon write note:", err.message);
+    console.warn("[order-store] Neon write note:", err?.message || err);
+    return false;
+  }
+}
+
+/**
+ * Migrates local disk orders to Neon PostgreSQL safely without losing data.
+ */
+export async function syncLocalOrdersToNeon(): Promise<number> {
+  try {
+    const sql = getNeonSql();
+    if (!sql || global.__neonReachable === false) return 0;
+    await ensureNeonTables();
+
+    const diskOrders = loadOrdersFromFile();
+    if (diskOrders.length === 0) return 0;
+
+    let syncedCount = 0;
+    for (const order of diskOrders) {
+      if (order && order.id) {
+        const ok = await saveOrderToNeon(order);
+        if (ok) syncedCount++;
+      }
+    }
+    return syncedCount;
+  } catch (err: any) {
+    console.warn("[order-store] Background sync to Neon warning:", err?.message);
+    return 0;
   }
 }
 
 export async function saveOrder(order: Order): Promise<Order> {
-  // Always update in-memory and disk first for instant response
+  // 1. Primary Transactional Storage: Await Neon PostgreSQL
+  try {
+    const savedToNeon = await saveOrderToNeon(order);
+    if (savedToNeon) {
+      (global as any).__neonReachable = true;
+    }
+  } catch (err) {
+    console.warn("[order-store] Primary Neon save encountered an error, falling back to local resilience store:", err);
+  }
+
+  // 2. Synchronize to in-memory store and local disk
   ordersStore.set(order.id, order);
   persistOrderToDisk(order);
 
-  // Sync to Neon asynchronously
-  saveOrderToNeon(order).catch(() => {});
-
-  if (!hasFirestoreCredentials() || !process.env.FIREBASE_CLIENT_EMAIL) {
-    return order;
-  }
-  try {
-    await adminDb!.collection("orders").doc(order.id).create(order);
-  } catch (err) {
-    console.warn("[order-store] Firestore write fallback to disk/memory store:", err);
+  // 3. Fallback to Firestore if configured
+  if (hasFirestoreCredentials() && process.env.FIREBASE_CLIENT_EMAIL) {
+    try {
+      await adminDb!.collection("orders").doc(order.id).create(order);
+    } catch (err) {
+      console.warn("[order-store] Firestore write fallback note:", err);
+    }
   }
   return order;
 }
@@ -376,9 +420,13 @@ export async function updateOrderPayment(
     console.warn("[order-store] Firestore payment update error:", err);
   }
 
-  // Sync to Neon
+  // Await Sync to Neon
   if (matchedOrder) {
-    saveOrderToNeon(matchedOrder).catch(() => {});
+    try {
+      await saveOrderToNeon(matchedOrder);
+    } catch (e) {
+      console.warn("[order-store] Neon payment sync note:", e);
+    }
   }
 
   return matchedOrder;
@@ -401,13 +449,15 @@ export async function updateOrderStatus(
   ordersStore.set(order.id, updated);
   persistOrderToDisk(updated);
 
-  // Sync to Neon
+  // Await Sync to Neon
   try {
     const sql = getNeonSql();
-    if (sql) {
-      sql`UPDATE orders SET order_status = ${newStatus}, updated_at = ${now} WHERE id = ${order.id} OR order_number = ${order.id}`.catch(() => {});
+    if (sql && global.__neonReachable !== false) {
+      await sql`UPDATE orders SET order_status = ${newStatus}, updated_at = ${now} WHERE id = ${order.id} OR order_number = ${order.id}`;
     }
-  } catch (e) {}
+  } catch (e: any) {
+    console.warn("[order-store] Neon order status sync note:", e?.message);
+  }
 
   try {
     if (hasFirestoreCredentials()) {
@@ -441,13 +491,23 @@ export async function updateOrderDeliveryStatus(
   ordersStore.set(order.id, updated);
   persistOrderToDisk(updated);
 
-  // Sync to Neon
+  // Await Sync to Neon
   try {
     const sql = getNeonSql();
-    if (sql) {
-      sql`UPDATE orders SET delivery_status = ${deliveryStatus}, updated_at = ${updated.updated_at} WHERE id = ${order.id} OR order_number = ${order.id}`.catch(() => {});
+    if (sql && global.__neonReachable !== false) {
+      await sql`
+        UPDATE orders 
+        SET delivery_status = ${deliveryStatus}, 
+            courier_id = ${updated.courier_id || null},
+            courier_name = ${updated.courier_name || null},
+            courier_phone = ${updated.courier_phone || null},
+            updated_at = ${updated.updated_at} 
+        WHERE id = ${order.id} OR order_number = ${order.id}
+      `;
     }
-  } catch (e) {}
+  } catch (e: any) {
+    console.warn("[order-store] Neon delivery status sync note:", e?.message);
+  }
 
   if (hasFirestoreCredentials()) {
     await adminDb!.collection("orders").doc(order.id).update({
