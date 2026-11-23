@@ -423,7 +423,7 @@ export default function HomePage() {
             </div>
             <Link href="/catalog">
               <Button variant="outline" className="rounded-full border-[#dcd7c8] bg-white font-bold hover:bg-[#ece8dc] gap-2">
-                <span>Lihat 9 Menu di Katalog</span>
+                <span>Lihat Semua Produk di Katalog</span>
                 <Flaticon name="arrow-right" variant="rr" className="text-sm" />
               </Button>
             </Link>
