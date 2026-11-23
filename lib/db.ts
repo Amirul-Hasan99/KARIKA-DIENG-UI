@@ -85,6 +85,25 @@ export async function ensureNeonTables() {
       await sql`CREATE INDEX IF NOT EXISTS idx_orders_customer_phone ON orders (customer_phone);`;
       await sql`CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders (order_number);`;
       await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at DESC);`;
+
+      // 4. Create products table for cloud production persistence
+      await sql`
+        CREATE TABLE IF NOT EXISTS products (
+          id VARCHAR(120) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          "group" VARCHAR(100) NOT NULL,
+          pack VARCHAR(100) NOT NULL,
+          price NUMERIC NOT NULL,
+          description TEXT,
+          image TEXT,
+          source TEXT,
+          note TEXT,
+          is_available BOOLEAN DEFAULT true,
+          stock_qty INTEGER DEFAULT 50,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+      `;
     })();
 
     const timeoutPromise = new Promise((_, reject) =>

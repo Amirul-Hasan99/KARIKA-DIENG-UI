@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const products = getAllKarikaProducts();
+    const products = await getAllKarikaProducts();
     return NextResponse.json(
       {
         success: true,
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      const newProduct = createKarikaProduct({
+      const newProduct = await createKarikaProduct({
         name,
         group: group || "Carica",
         pack: pack || "1 paket",
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing product id" }, { status: 400 });
     }
 
-    const updated = updateKarikaProduct(id, {
+    const updated = await updateKarikaProduct(id, {
       ...(name !== undefined ? { name: String(name) } : {}),
       ...(group !== undefined ? { group } : {}),
       ...(pack !== undefined ? { pack: String(pack) } : {}),
@@ -105,7 +105,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, error: "Missing product id" }, { status: 400 });
     }
 
-    const deleted = deleteKarikaProduct(id);
+    const deleted = await deleteKarikaProduct(id);
     if (!deleted) {
       return NextResponse.json({ success: false, error: "Product not found" }, { status: 404 });
     }

@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const distance = distanceKm(origin, coordinates);
     if (distance > MAX_RADIUS_KM) return NextResponse.json({ error: "Alamat berada di luar radius pengiriman 8 km dari Titik Nol Dieng." }, { status: 400 });
 
-    const catalogProducts = getAllKarikaProducts();
+    const catalogProducts = await getAllKarikaProducts();
     const catalogMap = new Map<string, { name: string; price: number; is_available: boolean }>(
       catalogProducts.map((p) => [p.id, { name: p.name, price: p.price, is_available: p.is_available !== false }])
     );

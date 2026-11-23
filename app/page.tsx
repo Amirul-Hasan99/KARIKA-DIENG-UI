@@ -187,8 +187,12 @@ export default function HomePage() {
               className="flex items-center gap-2 sm:gap-2.5 group"
               title="D OLEH - OLEH"
             >
-              <span className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl sm:rounded-2xl bg-white border border-[#e8e5dc] shadow-xs overflow-hidden shrink-0 p-1">
-                <BrandLogoIcon size={34} />
+              <span className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center shrink-0 overflow-hidden">
+                <img
+                  src="/images/logo-d-oleh2.png"
+                  alt="D OLEH2"
+                  className="h-full w-full object-contain"
+                />
               </span>
               <div className="flex flex-col">
                 <span className="text-base xs:text-lg sm:text-2xl font-black tracking-tight text-[#24251f] whitespace-nowrap">
@@ -369,29 +373,28 @@ export default function HomePage() {
             <div className="lg:col-span-5">
               <div className="relative isolate mx-auto w-full max-w-md lg:max-w-none">
                 {/* Decorative background glow */}
-                <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-[#E25C00]/20 via-[#fed7aa]/25 to-transparent blur-xl -z-10" />
+                <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-[#E25C00]/10 via-[#fed7aa]/15 to-transparent blur-2xl -z-10" />
 
-                <div className="relative aspect-[4/5] sm:aspect-[4/4.5] overflow-hidden rounded-[2.25rem] border-2 border-[#e7e4d8] bg-white shadow-2xl flex items-center justify-center p-6 sm:p-10">
-                  <Image
-                    src={heroImage}
-                    alt="Logo Resmi D OLEH2 Wonosobo Dieng"
-                    fill
-                    priority
-                    unoptimized
-                    sizes="(max-width: 1024px) 100vw, 40vw"
-                    className="object-contain p-6 sm:p-10 transition duration-700 hover:scale-105"
-                  />
-
+                <div className="relative aspect-[4/5] sm:aspect-[4/4.5] overflow-hidden rounded-[2.25rem] border-2 border-[#e7e4d8] bg-white shadow-2xl flex flex-col items-center justify-center">
                   {/* Top Badge on card */}
-                  <div className="absolute top-5 left-5 right-5 flex items-center justify-between">
+                  <div className="absolute top-5 left-5 right-5 flex items-center justify-between z-10">
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50/90 px-3.5 py-1.5 text-xs font-bold text-[#E25C00] shadow-2xs backdrop-blur-md">
                       <Flaticon name="compass" variant="rr" className="text-xs text-[#E25C00]" />
                       Titik 0 Km Dieng
                     </span>
                   </div>
 
+                  {/* Logo - centered and large */}
+                  <div className="flex-1 flex items-center justify-center w-full px-8 sm:px-12 py-16 sm:py-20">
+                    <img
+                      src="/images/logo-d-oleh2.png"
+                      alt="Logo Resmi D OLEH2 Wonosobo Dieng"
+                      className="w-full max-w-[280px] sm:max-w-[320px] h-auto object-contain transition duration-700 hover:scale-105"
+                    />
+                  </div>
+
                   {/* Bottom Captions on card */}
-                  <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/95 backdrop-blur-md p-3.5 sm:p-4 text-center border border-[#e8e5dc] shadow-xs">
+                  <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-white/95 backdrop-blur-md p-3.5 sm:p-4 text-center border border-[#e8e5dc] shadow-xs z-10">
                     <p className="text-xs sm:text-sm font-black uppercase tracking-[0.15em] text-[#E25C00]">
                       D' Oleh-Oleh
                     </p>
@@ -565,8 +568,12 @@ export default function HomePage() {
                   INFORMASI
                 </span>
                 <Link href="/" className="inline-flex items-center gap-2">
-                  <span className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white border border-[#e8e5dc] shadow-xs overflow-hidden shrink-0 p-1">
-                    <BrandLogoIcon size={34} />
+                  <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center shrink-0 overflow-hidden">
+                    <img
+                      src="/images/logo-d-oleh2.png"
+                      alt="D OLEH2"
+                      className="h-full w-full object-contain"
+                    />
                   </span>
                   <span className="text-xl font-black tracking-tight text-[#24251f]">
                     D OLEH - OLEH

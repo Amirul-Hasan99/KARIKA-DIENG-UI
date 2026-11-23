@@ -286,8 +286,12 @@ export default function CatalogPage() {
         <nav className="mx-auto flex h-[62px] sm:h-[68px] max-w-7xl items-center justify-between px-3 sm:px-8">
           <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/" className="flex items-center gap-2">
-              <span className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white border border-[#e8e5dc] shadow-xs overflow-hidden shrink-0 p-1">
-                <BrandLogoIcon size={30} />
+              <span className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center shrink-0 overflow-hidden">
+                <img
+                  src="/images/logo-d-oleh2.png"
+                  alt="D OLEH2"
+                  className="h-full w-full object-contain"
+                />
               </span>
               <span className="text-base xs:text-lg sm:text-xl font-black tracking-tight text-[#24251f] whitespace-nowrap">
                 D OLEH - OLEH

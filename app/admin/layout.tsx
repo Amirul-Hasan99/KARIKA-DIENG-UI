@@ -89,8 +89,8 @@ export default function AdminLayout({
     return (
       <div className="min-h-screen grid place-items-center bg-[#f8f7f2] text-[#292a23]">
         <div className="flex flex-col items-center gap-3">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white border border-[#e8e5dc] shadow-md p-1.5 animate-pulse overflow-hidden">
-            <BrandLogoIcon size={44} />
+          <span className="flex h-16 w-16 items-center justify-center shrink-0 animate-pulse overflow-hidden">
+            <img src="/images/logo-d-oleh2.png" alt="D OLEH2" className="h-full w-full object-contain" />
           </span>
           <p className="text-sm font-semibold text-slate-700">
             Memverifikasi keamanan sesi admin D OLEH - OLEH...

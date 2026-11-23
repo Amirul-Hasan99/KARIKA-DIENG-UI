@@ -154,8 +154,8 @@ function OrdersContent() {
       <header className="sticky top-0 z-20 border-b border-[#e9e7dc] bg-[#f8f7f2]/95 backdrop-blur-md">
         <nav className="mx-auto flex h-[68px] max-w-5xl items-center justify-between px-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-white border border-[#e8e5dc] shadow-xs overflow-hidden shrink-0 p-1">
-              <BrandLogoIcon size={32} />
+            <span className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center shrink-0 overflow-hidden">
+              <img src="/images/logo-d-oleh2.png" alt="D OLEH2" className="h-full w-full object-contain" />
             </span>
             <div className="flex flex-col">
               <span className="text-lg font-black tracking-tight text-[#24251f]">
