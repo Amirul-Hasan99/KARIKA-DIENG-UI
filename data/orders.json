@@ -1,5 +1,86 @@
 [
   {
+    "id": "ord_fbf5518f-3baa-4305-aa90-cba145034d98",
+    "order_number": "GC-261124-DELIVERY-TKRL",
+    "table_id": "delivery",
+    "table_number": "delivery",
+    "customer_name": "QA Automated Tester",
+    "customer_phone": "089988776655",
+    "delivery_address": "Homestay Panorama Dieng Kulon (Titik Uji QA)",
+    "coordinates": {
+      "lat": -7.2078,
+      "lng": 109.9075
+    },
+    "delivery_distance_km": 0.57,
+    "items": [
+      {
+        "menu_id": "amerta-karika-sirup-6-cup",
+        "name": "Amerta Karika Sirup 6 Cup",
+        "price": 38000,
+        "qty": 3,
+        "selected_modifiers": [],
+        "subtotal": 114000
+      },
+      {
+        "menu_id": "karika-gemilang-isi-12-cup",
+        "name": "Karika Gemilang Isi 12 Cup",
+        "price": 60000,
+        "qty": 2,
+        "selected_modifiers": [],
+        "subtotal": 120000
+      }
+    ],
+    "total_amount": 234000,
+    "payment_status": "failed",
+    "order_status": "completed",
+    "delivery_status": "failed_attempt",
+    "payment_type": "cod",
+    "created_at": "2026-11-24T17:38:33.324Z",
+    "updated_at": "2026-11-24T17:38:43.049Z",
+    "midtrans_transaction_id": "cash_1795541918362",
+    "courier_name": "Pak Slamet (Dieng Delivery)"
+  },
+  {
+    "id": "ord_a5b67710-b5be-4fa2-acd3-038d63a520c9",
+    "order_number": "GC-261124-DELIVERY-H032",
+    "table_id": "delivery",
+    "table_number": "delivery",
+    "customer_name": "QA Automated Tester",
+    "customer_phone": "089988776655",
+    "delivery_address": "Homestay Panorama Dieng Kulon (Titik Uji QA)",
+    "coordinates": {
+      "lat": -7.2078,
+      "lng": 109.9075
+    },
+    "delivery_distance_km": 0.57,
+    "items": [
+      {
+        "menu_id": "amerta-karika-sirup-6-cup",
+        "name": "Amerta Karika Sirup 6 Cup",
+        "price": 38000,
+        "qty": 3,
+        "selected_modifiers": [],
+        "subtotal": 114000
+      },
+      {
+        "menu_id": "karika-gemilang-isi-12-cup",
+        "name": "Karika Gemilang Isi 12 Cup",
+        "price": 60000,
+        "qty": 2,
+        "selected_modifiers": [],
+        "subtotal": 120000
+      }
+    ],
+    "total_amount": 234000,
+    "payment_status": "failed",
+    "order_status": "completed",
+    "delivery_status": "pending",
+    "payment_type": "cod",
+    "created_at": "2026-11-24T17:36:25.712Z",
+    "updated_at": "2026-11-24T17:36:46.819Z",
+    "midtrans_transaction_id": "cash_1795541801484"
+  },
+  {
     "id": "ord_a5792c25-4897-45ee-b4d7-c5b1400c6a4e",
     "order_number": "GC-261122-DELIVERY-KSAV",
     "table_id": "delivery",

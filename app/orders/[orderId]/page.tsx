@@ -393,8 +393,8 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
               <span>Cari dengan No. WA</span>
             </Link>
             <div className="flex items-center gap-2">
-              <span className="flex h-10 w-10 items-center justify-center shrink-0 overflow-hidden" title="D OLEH - OLEH">
-                <img src="/images/logo-d-oleh2.png" alt="D OLEH2" className="h-full w-full object-contain" />
+              <span className="flex h-9 w-13 items-center justify-center shrink-0 rounded-lg overflow-hidden shadow-2xs border border-[#1b3d2b]/20 bg-[#163826]" title="D OLEH - OLEH">
+                <img src="/images/logo-d-oleh2.webp" alt="D OLEH-OLEH" className="h-full w-full object-cover rounded-lg" />
               </span>
               <span className="text-xs font-black tracking-tight text-[#24251f] hidden sm:inline">
                 D OLEH - OLEH

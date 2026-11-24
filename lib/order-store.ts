@@ -696,6 +696,7 @@ export async function cancelOrder(orderId: string, reason: string = "Dibatalkan"
   const updated: Order = {
     ...order,
     payment_status: "failed",
+    delivery_status: "failed_attempt",
     order_status: "completed",
     updated_at: now,
   };
@@ -704,9 +705,25 @@ export async function cancelOrder(orderId: string, reason: string = "Dibatalkan"
   persistOrderToDisk(updated);
 
   try {
+    const sql = getNeonSql();
+    if (sql && global.__neonReachable !== false) {
+      await sql`
+        UPDATE orders 
+        SET payment_status = 'failed',
+            delivery_status = 'failed_attempt',
+            updated_at = ${now}
+        WHERE id = ${order.id} OR order_number = ${order.id}
+      `;
+    }
+  } catch (err) {
+    console.warn("[order-store] Neon cancel order error:", err);
+  }
+
+  try {
     if (hasFirestoreCredentials()) {
       await adminDb!.collection("orders").doc(order.id).update({
         payment_status: "failed",
+        delivery_status: "failed_attempt",
         order_status: "completed",
         updated_at: now,
       });

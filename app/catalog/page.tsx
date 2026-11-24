@@ -285,12 +285,12 @@ export default function CatalogPage() {
       <header className="sticky top-0 z-20 border-b border-[#e9e7dc] bg-[#f8f7f2]/95 backdrop-blur">
         <nav className="mx-auto flex h-[62px] sm:h-[68px] max-w-7xl items-center justify-between px-3 sm:px-8">
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center shrink-0 overflow-hidden">
+            <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group">
+              <span className="flex h-10 w-14 sm:h-11 sm:w-16 items-center justify-center shrink-0 rounded-xl overflow-hidden shadow-xs border border-[#1b3d2b]/20 bg-[#163826]">
                 <img
-                  src="/images/logo-d-oleh2.png"
-                  alt="D OLEH2"
-                  className="h-full w-full object-contain"
+                  src="/images/logo-d-oleh2.webp"
+                  alt="D OLEH-OLEH"
+                  className="h-full w-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
                 />
               </span>
               <span className="text-base xs:text-lg sm:text-xl font-black tracking-tight text-[#24251f] whitespace-nowrap">

@@ -184,14 +184,14 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <Link
               href="/admin/login"
-              className="flex items-center gap-2 sm:gap-2.5 group"
+              className="flex items-center gap-2.5 sm:gap-3 group"
               title="D OLEH - OLEH"
             >
-              <span className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center shrink-0 overflow-hidden">
+              <span className="flex h-10 w-14 sm:h-12 sm:w-16 items-center justify-center shrink-0 rounded-xl overflow-hidden shadow-xs border border-[#1b3d2b]/20 bg-[#163826]">
                 <img
-                  src="/images/logo-d-oleh2.png"
-                  alt="D OLEH2"
-                  className="h-full w-full object-contain"
+                  src="/images/logo-d-oleh2.webp"
+                  alt="D OLEH-OLEH"
+                  className="h-full w-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
                 />
               </span>
               <div className="flex flex-col">
@@ -373,9 +373,9 @@ export default function HomePage() {
             <div className="lg:col-span-5">
               <div className="relative isolate mx-auto w-full max-w-md lg:max-w-none">
                 {/* Decorative background glow */}
-                <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-[#E25C00]/10 via-[#fed7aa]/15 to-transparent blur-2xl -z-10" />
+                <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-[#163826]/20 via-[#E25C00]/15 to-transparent blur-2xl -z-10" />
 
-                <div className="relative aspect-[4/5] sm:aspect-[4/4.5] overflow-hidden rounded-[2.25rem] border-2 border-[#e7e4d8] bg-white shadow-2xl flex flex-col items-center justify-center">
+                <div className="relative aspect-[4/5] sm:aspect-[4/4.5] overflow-hidden rounded-[2.25rem] border-2 border-[#e7e4d8] bg-white shadow-2xl flex flex-col items-center justify-center p-4 sm:p-6">
                   {/* Top Badge on card */}
                   <div className="absolute top-5 left-5 right-5 flex items-center justify-between z-10">
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50/90 px-3.5 py-1.5 text-xs font-bold text-[#E25C00] shadow-2xs backdrop-blur-md">
@@ -384,13 +384,15 @@ export default function HomePage() {
                     </span>
                   </div>
 
-                  {/* Logo - centered and large */}
-                  <div className="flex-1 flex items-center justify-center w-full px-8 sm:px-12 py-16 sm:py-20">
-                    <img
-                      src="/images/logo-d-oleh2.png"
-                      alt="Logo Resmi D OLEH2 Wonosobo Dieng"
-                      className="w-full max-w-[280px] sm:max-w-[320px] h-auto object-contain transition duration-700 hover:scale-105"
-                    />
+                  {/* Logo - prominently centered with rounded corners */}
+                  <div className="flex-1 flex items-center justify-center w-full px-2 sm:px-4 py-14 sm:py-16">
+                    <div className="w-full max-w-[320px] sm:max-w-[360px] aspect-[3/2] rounded-2xl overflow-hidden shadow-xl border border-[#1b3d2b]/25 bg-[#163826] transition duration-700 hover:scale-[1.03]">
+                      <img
+                        src="/images/logo-d-oleh2.webp"
+                        alt="Logo Resmi D OLEH-OLEH Wonosobo Dieng"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   </div>
 
                   {/* Bottom Captions on card */}
@@ -567,12 +569,12 @@ export default function HomePage() {
                 <span className="text-xs font-black uppercase tracking-wider text-[#E25C00] block">
                   INFORMASI
                 </span>
-                <Link href="/" className="inline-flex items-center gap-2">
-                  <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center shrink-0 overflow-hidden">
+                <Link href="/" className="inline-flex items-center gap-2.5 sm:gap-3 group">
+                  <span className="flex h-11 w-16 sm:h-12 sm:w-18 items-center justify-center shrink-0 rounded-xl overflow-hidden shadow-xs border border-[#1b3d2b]/20 bg-[#163826]">
                     <img
-                      src="/images/logo-d-oleh2.png"
-                      alt="D OLEH2"
-                      className="h-full w-full object-contain"
+                      src="/images/logo-d-oleh2.webp"
+                      alt="D OLEH-OLEH"
+                      className="h-full w-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
                     />
                   </span>
                   <span className="text-xl font-black tracking-tight text-[#24251f]">
