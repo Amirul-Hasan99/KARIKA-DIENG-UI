@@ -211,17 +211,23 @@ export async function syncLocalOrdersToNeon(): Promise<number> {
 }
 
 export async function saveOrder(order: Order): Promise<Order> {
-  // 1. Primary Transactional Storage: Await Neon PostgreSQL
+  // Production must not report success until Neon confirms the write.
   try {
     const savedToNeon = await saveOrderToNeon(order);
     if (savedToNeon) {
       (global as any).__neonReachable = true;
+      ordersStore.set(order.id, order);
+      return order;
     }
   } catch (err) {
-    console.warn("[order-store] Primary Neon save encountered an error, falling back to local resilience store:", err);
+    console.warn("[order-store] Neon save failed.", err);
   }
 
-  // 2. Synchronize to in-memory store and local disk
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Pesanan tidak dapat disimpan ke database.");
+  }
+
+  // Local development fallback only.
   ordersStore.set(order.id, order);
   persistOrderToDisk(order);
 

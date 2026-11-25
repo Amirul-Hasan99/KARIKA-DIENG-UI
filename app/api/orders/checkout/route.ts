@@ -6,17 +6,6 @@ import { getAllKarikaProducts } from "@/lib/karika-products";
 
 const MAX_RADIUS_KM = 8;
 const MIN_ITEMS = 5;
-const demoProducts: Record<string, { name: string; price: number; is_available: boolean }> = {
-  "carica-biasa": { name: "Carica Biasa · isi 6", price: 22000, is_available: true },
-  "carica-premium": { name: "Carica Premium · isi 6", price: 40000, is_available: true },
-  "carica-kardus": { name: "Carica Kardus · isi 6", price: 22000, is_available: true },
-  "mie-ongklok": { name: "Mie Ongklok Instan · isi 6", price: 78000, is_available: true },
-  "pitos-gurih": { name: "Pitos Gurih · isi 6", price: 90000, is_available: true },
-  "keripik-carica": { name: "Keripik Carica · isi 6", price: 90000, is_available: true },
-  "keripik-combro": { name: "Keripik Combro · isi 6", price: 78000, is_available: true },
-  "keripik-jamur": { name: "Keripik Jamur · isi 6", price: 150000, is_available: true },
-  purwaceng: { name: "Purwaceng · isi 6", price: 240000, is_available: true },
-};
 const distanceKm = (a: {lat:number;lng:number}, b: {lat:number;lng:number}) => {
   const rad = (n:number) => n * Math.PI / 180;
   const dLat = rad(b.lat-a.lat), dLng = rad(b.lng-a.lng);
@@ -60,7 +49,7 @@ export async function POST(req: NextRequest) {
     );
 
     const orderItems: OrderItem[] = items.map((item: { productId: string; qty: number }) => {
-      const product = catalogMap.get(item.productId) || demoProducts[item.productId];
+      const product = catalogMap.get(item.productId);
       if (!product || product.is_available !== true || !Number.isSafeInteger(product.price) || product.price <= 0) {
         throw new Error("Produk belum tersedia atau belum memiliki harga yang dikonfirmasi.");
       }

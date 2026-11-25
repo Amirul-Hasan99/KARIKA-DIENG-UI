@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { KarikaProduct, INITIAL_KARIKA_PRODUCTS, KARIKA_CATEGORIES } from "./karika-products-data";
 import { getMenuStockMap, setMenuItemAvailability } from "./order-store";
-import { getNeonSql } from "./db";
+import { ensureNeonTables, getNeonSql } from "./db";
 
 export * from "./karika-products-data";
 
@@ -37,12 +37,13 @@ export async function getAllKarikaProducts(): Promise<KarikaProduct[]> {
   const sql = getNeonSql();
   if (sql) {
     try {
+      await ensureNeonTables();
       const rows = await sql`
         SELECT id, name, "group", pack, price, description, image, source, note, is_available, stock_qty
         FROM products
         ORDER BY created_at ASC
       `;
-      if (Array.isArray(rows) && rows.length > 0) {
+      if (Array.isArray(rows)) {
         const stockMap = getMenuStockMap();
         return rows.map((r: any) => ({
           id: r.id,
@@ -59,8 +60,15 @@ export async function getAllKarikaProducts(): Promise<KarikaProduct[]> {
         }));
       }
     } catch (err) {
-      console.warn("[products] Neon read error, falling back to local file:", err);
+      console.error("[products] Neon read failed.", err);
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("Katalog produk tidak dapat dimuat dari database.");
+      }
     }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Database produk belum dikonfigurasi.");
   }
 
   // Local fallback
@@ -109,11 +117,12 @@ export async function createKarikaProduct(productData: {
     is_available: productData.is_available !== undefined ? Boolean(productData.is_available) : true,
   };
 
-  // 1. Save to Neon PostgreSQL if available
+  // Production writes must be confirmed by the persistent database.
   const sql = getNeonSql();
   if (sql) {
     try {
-      await sql`
+      await ensureNeonTables();
+      const rows = await sql`
         INSERT INTO products (id, name, "group", pack, price, description, image, source, note, is_available, stock_qty)
         VALUES (
           ${newProduct.id},
@@ -128,26 +137,20 @@ export async function createKarikaProduct(productData: {
           ${newProduct.is_available},
           ${newProduct.stock_qty}
         )
-        ON CONFLICT (id) DO UPDATE SET
-          name = EXCLUDED.name,
-          "group" = EXCLUDED."group",
-          pack = EXCLUDED.pack,
-          price = EXCLUDED.price,
-          description = EXCLUDED.description,
-          image = EXCLUDED.image,
-          is_available = EXCLUDED.is_available,
-          stock_qty = EXCLUDED.stock_qty,
-          updated_at = NOW();
+        RETURNING id;
       `;
+      if (!rows.length) throw new Error("Database did not confirm product creation.");
     } catch (e) {
-      console.error("[products] Failed to insert to Neon:", e);
+      console.error("[products] Neon create failed.", e);
+      throw new Error("Produk gagal disimpan ke database.");
     }
+  } else if (process.env.NODE_ENV === "production") {
+    throw new Error("Database produk belum dikonfigurasi.");
+  } else {
+    const local = readLocalProducts();
+    local.push(newProduct);
+    saveLocalProducts(local);
   }
-
-  // 2. Save to local products.json
-  const local = readLocalProducts();
-  local.push(newProduct);
-  saveLocalProducts(local);
 
   setMenuItemAvailability(newProduct.id, newProduct.is_available);
   return newProduct;
@@ -157,6 +160,49 @@ export async function updateKarikaProduct(
   id: string,
   updates: Partial<KarikaProduct>
 ): Promise<KarikaProduct | null> {
+  const sql = getNeonSql();
+  if (sql) {
+    try {
+      await ensureNeonTables();
+      const rows = await sql`
+        UPDATE products SET
+          name = COALESCE(${updates.name !== undefined ? String(updates.name) : null}, name),
+          "group" = COALESCE(${updates.group || null}, "group"),
+          pack = COALESCE(${updates.pack !== undefined ? String(updates.pack) : null}, pack),
+          price = COALESCE(${updates.price !== undefined ? Number(updates.price) : null}, price),
+          description = COALESCE(${updates.description !== undefined ? String(updates.description) : null}, description),
+          image = COALESCE(${updates.image !== undefined ? String(updates.image) : null}, image),
+          is_available = COALESCE(${updates.is_available !== undefined ? Boolean(updates.is_available) : null}, is_available),
+          stock_qty = COALESCE(${updates.stock_qty !== undefined ? Number(updates.stock_qty) : null}, stock_qty),
+          updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING id, name, "group", pack, price, description, image, source, note, is_available, stock_qty;
+      `;
+      if (!rows.length) return null;
+      const row: any = rows[0];
+      if (updates.is_available !== undefined) setMenuItemAvailability(id, updates.is_available);
+      return {
+        id: row.id,
+        name: row.name,
+        group: row.group,
+        pack: row.pack,
+        price: Number(row.price),
+        description: row.description || "",
+        image: row.image || "/images/hero-dieng.jpg",
+        source: row.source || undefined,
+        note: row.note || undefined,
+        is_available: row.is_available !== false,
+        stock_qty: Number(row.stock_qty ?? 50),
+      };
+    } catch (e) {
+      console.error("[products] Neon update failed.", e);
+      throw new Error("Produk gagal diperbarui di database.");
+    }
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Database produk belum dikonfigurasi.");
+  }
+
   const local = readLocalProducts();
   const index = local.findIndex((p) => p.id === id);
   const current = index !== -1 ? local[index] : null;
@@ -173,29 +219,6 @@ export async function updateKarikaProduct(
     is_available: updates.is_available !== undefined ? Boolean(updates.is_available) : (current?.is_available !== false),
   };
 
-  // 1. Update Neon PostgreSQL
-  const sql = getNeonSql();
-  if (sql) {
-    try {
-      await sql`
-        UPDATE products SET
-          name = COALESCE(${updates.name !== undefined ? String(updates.name) : null}, name),
-          "group" = COALESCE(${updates.group || null}, "group"),
-          pack = COALESCE(${updates.pack !== undefined ? String(updates.pack) : null}, pack),
-          price = COALESCE(${updates.price !== undefined ? Number(updates.price) : null}, price),
-          description = COALESCE(${updates.description !== undefined ? String(updates.description) : null}, description),
-          image = COALESCE(${updates.image !== undefined ? String(updates.image) : null}, image),
-          is_available = COALESCE(${updates.is_available !== undefined ? Boolean(updates.is_available) : null}, is_available),
-          stock_qty = COALESCE(${updates.stock_qty !== undefined ? Number(updates.stock_qty) : null}, stock_qty),
-          updated_at = NOW()
-        WHERE id = ${id};
-      `;
-    } catch (e) {
-      console.error("[products] Failed to update in Neon:", e);
-    }
-  }
-
-  // 2. Update local file
   if (index !== -1) {
     local[index] = merged;
     saveLocalProducts(local);
@@ -209,20 +232,25 @@ export async function updateKarikaProduct(
 }
 
 export async function deleteKarikaProduct(id: string): Promise<boolean> {
-  // 1. Delete from Neon PostgreSQL
   const sql = getNeonSql();
   if (sql) {
     try {
-      await sql`DELETE FROM products WHERE id = ${id};`;
+      await ensureNeonTables();
+      const rows = await sql`DELETE FROM products WHERE id = ${id} RETURNING id;`;
+      return rows.length > 0;
     } catch (e) {
-      console.error("[products] Failed to delete from Neon:", e);
+      console.error("[products] Neon delete failed.", e);
+      throw new Error("Produk gagal dihapus dari database.");
     }
   }
 
-  // 2. Delete from local file
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Database produk belum dikonfigurasi.");
+  }
+
   const local = readLocalProducts();
   const filtered = local.filter((p) => p.id !== id);
+  const found = filtered.length !== local.length;
   saveLocalProducts(filtered);
-
-  return true;
+  return found;
 }
