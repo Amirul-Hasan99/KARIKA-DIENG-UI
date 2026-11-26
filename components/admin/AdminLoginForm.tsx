@@ -29,6 +29,10 @@ export default function AdminLoginForm() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Tidak dapat masuk.");
+      // Mark active tab session so AdminLayout distinguishes fresh login from reload/new-tab/re-entry
+      try {
+        sessionStorage.setItem("dioleh2_tab_auth", "1");
+      } catch {}
       // Use replace to prevent back button from returning to login form
       window.location.replace("/admin");
     } catch (cause) {
@@ -49,8 +53,8 @@ export default function AdminLoginForm() {
         </Link>
         <Card className="rounded-3xl shadow-sm border border-[#e8e5dc]">
           <CardHeader className="space-y-4 p-7 pb-5 sm:p-8 sm:pb-5">
-            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white border border-[#e8e5dc] shadow-xs overflow-hidden p-1.5">
-              <BrandLogoIcon size={42} />
+            <div className="flex h-12 w-18 items-center justify-center rounded-xl bg-[#163826] border border-[#1b3d2b]/20 shadow-xs overflow-hidden">
+              <img src="/images/logo-d-oleh2.webp" alt="D OLEH-OLEH" className="h-full w-full object-cover" />
             </div>
             <div>
               <CardTitle className="text-2xl font-bold tracking-tight">

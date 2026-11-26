@@ -49,7 +49,10 @@ export async function POST(request: NextRequest) {
     const signature = createHmac("sha256", key).update(payload).digest("base64url");
     const response = NextResponse.json({ success: true });
     response.cookies.set(COOKIE, `${payload}.${signature}`, {
-      httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", maxAge: MAX_AGE_SECONDS,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
     });
     return response;
   } catch {

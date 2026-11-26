@@ -16,15 +16,56 @@ export default function AdminLayout({
   useEffect(() => {
     if (isLoginPage) return;
 
-    // 1. Anti-bfcache (Back-Forward Cache): If restored from cache, force fresh reload
+    const forceLogoutAndRedirect = async (reason?: string) => {
+      try {
+        sessionStorage.removeItem("dioleh2_tab_auth");
+      } catch {}
+      try {
+        await fetch("/api/admin/logout", { method: "POST", keepalive: true });
+      } catch {}
+      window.location.replace(reason ? `/admin/login?reason=${reason}` : "/admin/login");
+    };
+
+    // 1. Strict Refresh Detection: Refresh (F5 / Ctrl+R) MUST require re-login
+    const navEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+    const navType = navEntries?.[0]?.type;
+    if (navType === "reload") {
+      void forceLogoutAndRedirect("refresh");
+      return;
+    }
+
+    // 2. Strict Tab/Browser Session Detection: New tab or reopened browser MUST require re-login
+    try {
+      if (sessionStorage.getItem("dioleh2_tab_auth") !== "1") {
+        void forceLogoutAndRedirect();
+        return;
+      }
+    } catch {
+      void forceLogoutAndRedirect();
+      return;
+    }
+
+    // 3. Anti-bfcache (Back-Forward Cache): If restored from cache, force re-login
     const handlePageShow = (event: PageTransitionEvent) => {
       if (event.persisted) {
-        window.location.reload();
+        void forceLogoutAndRedirect();
       }
     };
     window.addEventListener("pageshow", handlePageShow);
 
-    // 2. Validate session on mount
+    // 4. Close tab / Close browser / Refresh / External navigation beacon logout
+    const handleBeforeUnload = () => {
+      try {
+        sessionStorage.removeItem("dioleh2_tab_auth");
+      } catch {}
+      try {
+        navigator.sendBeacon("/api/admin/logout");
+      } catch {}
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleBeforeUnload);
+
+    // 5. Validate session on mount
     let isMounted = true;
     const verifySession = async () => {
       try {
@@ -35,8 +76,7 @@ export default function AdminLayout({
         });
 
         if (!res.ok) {
-          // Token expired or invalid: immediately replace history state with login
-          window.location.replace("/admin/login");
+          await forceLogoutAndRedirect();
           return;
         }
 
@@ -44,27 +84,24 @@ export default function AdminLayout({
           setIsVerifying(false);
         }
       } catch {
-        window.location.replace("/admin/login");
+        await forceLogoutAndRedirect();
       }
     };
 
     void verifySession();
 
-    // 3. Browser Back/Forward (Undo/Redo) history guard
+    // 6. Browser Back/Forward (Undo/Redo) history guard
     const handlePopState = () => {
       void verifySession();
     };
     window.addEventListener("popstate", handlePopState);
 
-    // 4. Inactivity auto-lock (60 minutes)
+    // 7. Inactivity auto-lock (60 minutes)
     let timeoutId: NodeJS.Timeout;
     const resetTimer = () => {
       clearTimeout(timeoutId);
-      timeoutId = setTimeout(async () => {
-        try {
-          await fetch("/api/admin/logout", { method: "POST" });
-        } catch {}
-        window.location.replace("/admin/login?reason=timeout");
+      timeoutId = setTimeout(() => {
+        void forceLogoutAndRedirect("timeout");
       }, 60 * 60 * 1000);
     };
 
@@ -76,10 +113,22 @@ export default function AdminLayout({
       isMounted = false;
       clearTimeout(timeoutId);
       window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
       window.removeEventListener("popstate", handlePopState);
       userEvents.forEach((ev) => window.removeEventListener(ev, resetTimer));
+
+      // 8. If navigating away from /admin/* (e.g. to Landing Page / or Buyer /catalog, /orders), immediately invalidate admin session
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
+        try {
+          sessionStorage.removeItem("dioleh2_tab_auth");
+        } catch {}
+        try {
+          navigator.sendBeacon("/api/admin/logout");
+        } catch {}
+      }
     };
-  }, [isLoginPage, pathname]);
+  }, [isLoginPage]);
 
   if (isLoginPage) {
     return <>{children}</>;

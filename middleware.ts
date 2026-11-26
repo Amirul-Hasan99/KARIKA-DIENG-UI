@@ -37,11 +37,41 @@ export async function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
   const isSessionValid = await isAdminSessionValid(sessionToken);
 
-  // If already authenticated and trying to visit login page, forward to dashboard
-  if (isLoginPage && isSessionValid) {
-    const redirect = NextResponse.redirect(new URL("/admin", request.url));
-    redirect.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-    return redirect;
+  // Non-admin public pages (/, /catalog, /orders): always clear any active admin session cookie
+  // so returning to /admin after visiting landing page or buyer panel forces a fresh login.
+  const isNonAdminPublicPage = !path.startsWith("/admin") && !path.startsWith("/api/");
+  if (isNonAdminPublicPage) {
+    const response = NextResponse.next();
+    if (request.cookies.has(ADMIN_COOKIE_NAME)) {
+      response.cookies.set(ADMIN_COOKIE_NAME, "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 0,
+        expires: new Date(0),
+      });
+    }
+    addSecurityHeaders(response);
+    return response;
+  }
+
+  // Always require explicit login when visiting /admin/login (clear any leftover session cookie)
+  if (isLoginPage) {
+    const response = NextResponse.next();
+    if (request.cookies.has(ADMIN_COOKIE_NAME)) {
+      response.cookies.set(ADMIN_COOKIE_NAME, "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 0,
+        expires: new Date(0),
+      });
+    }
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    addSecurityHeaders(response);
+    return response;
   }
 
   // Not a protected route
@@ -99,4 +129,4 @@ function addSecurityHeaders(response: NextResponse) {
   response.headers.set("Permissions-Policy", "geolocation=(self), camera=(self), microphone=()");
 }
 
-export const config = { matcher: ["/admin/:path*", "/api/:path*"] };
+export const config = { matcher: ["/", "/catalog", "/orders/:path*", "/admin/:path*", "/api/:path*"] };
