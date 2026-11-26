@@ -13,11 +13,6 @@ import Flaticon from "@/components/ui/Flaticon";
 import { KarikaProduct, INITIAL_KARIKA_PRODUCTS, KARIKA_CATEGORIES } from "@/lib/karika-products-data";
 import { Courier } from "@/types";
 import { DEFAULT_COURIERS } from "@/lib/couriers";
-import {
-  removeProductBackground,
-  renderStudioProductImage,
-  StudioOutputMode,
-} from "@/lib/product-studio";
 
 export default function AdminDashboardPage() {
   const {
@@ -59,18 +54,11 @@ export default function AdminDashboardPage() {
     phone: "",
   });
 
-  // Product modal & CRUD form state with Auto-Studio Image Processing
+  // Product modal & CRUD form state with Direct Device Image Upload
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<KarikaProduct | null>(null);
   const [selectedProductFile, setSelectedProductFile] = useState<File | null>(null);
   const [productFilePreview, setProductFilePreview] = useState<string>("");
-  const [studioCutoutDataUrl, setStudioCutoutDataUrl] = useState<string>("");
-  const [studioMode, setStudioMode] = useState<StudioOutputMode>("template");
-  const [studioProgress, setStudioProgress] = useState<{ active: boolean; stage: string; pct: number }>({
-    active: false,
-    stage: "",
-    pct: 0,
-  });
   const [isUploadingProductFile, setIsUploadingProductFile] = useState(false);
   const [productUploadError, setProductUploadError] = useState<string>("");
   const [productForm, setProductForm] = useState({
@@ -714,14 +702,11 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
     }
   };
 
-  // Product CRUD Form Handlers with Auto-Studio Device Image Upload
+  // Product CRUD Form Handlers with Direct Device Image Upload
   const handleOpenAddProduct = () => {
     setEditingProduct(null);
     setSelectedProductFile(null);
     setProductFilePreview("");
-    setStudioCutoutDataUrl("");
-    setStudioMode("template");
-    setStudioProgress({ active: false, stage: "", pct: 0 });
     setProductUploadError("");
     setProductForm({
       name: "",
@@ -740,9 +725,6 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
     setEditingProduct(prod);
     setSelectedProductFile(null);
     setProductFilePreview(prod.image || "");
-    setStudioCutoutDataUrl("");
-    setStudioMode("template");
-    setStudioProgress({ active: false, stage: "", pct: 0 });
     setProductUploadError("");
     setProductForm({
       name: prod.name,
@@ -757,26 +739,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
     setIsAddProductOpen(true);
   };
 
-  const applyStudioMode = async (
-    mode: StudioOutputMode,
-    cutoutUrl: string = studioCutoutDataUrl,
-    packText: string = productForm.pack
-  ) => {
-    setStudioMode(mode);
-    if (!cutoutUrl) return;
-    try {
-      const rendered = await renderStudioProductImage(cutoutUrl, {
-        mode,
-        packBadge: packText,
-      });
-      setSelectedProductFile(rendered.file);
-      setProductFilePreview(rendered.dataUrl);
-    } catch (err: any) {
-      setProductUploadError(err?.message || "Gagal merender template gambar.");
-    }
-  };
-
-  const handleProductFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProductFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -796,26 +759,6 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
     setSelectedProductFile(file);
     setProductFilePreview(URL.createObjectURL(file));
-
-    // Auto-Studio: Hapus background otomatis via WASM/ONNX lalu terapkan mode pilihan
-    setStudioProgress({ active: true, stage: "Menyiapkan Auto-Studio AI...", pct: 10 });
-    try {
-      const cutout = await removeProductBackground(file, (stage, pct) => {
-        setStudioProgress({ active: true, stage, pct });
-      });
-      setStudioCutoutDataUrl(cutout);
-      const rendered = await renderStudioProductImage(cutout, {
-        mode: studioMode,
-        packBadge: productForm.pack,
-      });
-      setSelectedProductFile(rendered.file);
-      setProductFilePreview(rendered.dataUrl);
-    } catch (err: any) {
-      console.warn("[Auto-Studio] Background removal fallback to original image:", err);
-      setProductUploadError("Auto-hapus background tidak tersedia di perangkat ini; menggunakan foto asli.");
-    } finally {
-      setStudioProgress({ active: false, stage: "", pct: 0 });
-    }
   };
 
   const handleSubmitProductForm = async (e: React.FormEvent) => {
@@ -3696,36 +3639,25 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   </div>
                 </div>
 
-                {/* Field 4: Foto Produk (Auto-Studio AI Background Removal + Template Katalog) */}
+                {/* Field 4: Foto Produk (Upload Langsung dari Perangkat & Preview) */}
                 <div className="space-y-3 rounded-xl border border-[#E6E1D6] bg-[#FAF8F5] p-3.5 sm:p-4">
                   <div className="flex items-center justify-between gap-2">
                     <label className="font-bold text-[#1C1917] uppercase tracking-wider text-[11px]">
-                      Auto-Studio Foto Produk <span className="text-[#B91C1C]">*</span>
+                      Foto Produk (Upload dari Perangkat) <span className="text-[#B91C1C]">*</span>
                     </label>
                     <span className="text-[10px] font-medium text-[#57534E]">
-                      Otomatis Hapus Background • JPG, PNG, WebP
+                      JPG, PNG, WebP (Maks. 5MB)
                     </span>
                   </div>
 
                   {/* Area Pilih File & Preview */}
                   <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <div
-                      className="h-24 w-24 shrink-0 rounded-xl overflow-hidden border border-[#E6E1D6] p-1 flex items-center justify-center shadow-2xs"
-                      style={{
-                        backgroundImage:
-                          studioCutoutDataUrl && studioMode === "transparent"
-                            ? "linear-gradient(45deg, #e7e5e4 25%, transparent 25%), linear-gradient(-45deg, #e7e5e4 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e7e5e4 75%), linear-gradient(-45deg, transparent 75%, #e7e5e4 75%)"
-                            : undefined,
-                        backgroundSize: "12px 12px",
-                        backgroundPosition: "0 0, 0 6px, 6px -6px, -6px 0",
-                        backgroundColor: "#FFFFFF",
-                      }}
-                    >
+                    <div className="h-24 w-24 shrink-0 rounded-xl overflow-hidden border border-[#E6E1D6] bg-white p-1 flex items-center justify-center shadow-2xs">
                       {productFilePreview || productForm.image ? (
                         <img
                           src={productFilePreview || productForm.image}
                           alt="Preview Produk"
-                          className="h-full w-full object-contain rounded-lg"
+                          className="h-full w-full object-cover rounded-lg"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = "none";
                           }}
@@ -3752,7 +3684,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                           className="cursor-pointer min-h-[38px] bg-[#1C1917] hover:bg-black text-white font-semibold px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1.5 transition shadow-2xs"
                         >
                           <Flaticon name="upload" className="text-xs text-[#D97706]" />
-                          <span>Pilih Foto (Auto Transparan)</span>
+                          <span>Pilih Foto dari Perangkat</span>
                         </label>
 
                         {selectedProductFile && (
@@ -3761,59 +3693,16 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                             onClick={() => {
                               setSelectedProductFile(null);
                               setProductFilePreview("");
-                              setStudioCutoutDataUrl("");
                               setProductUploadError("");
                             }}
                             className="min-h-[38px] border border-[#E6E1D6] bg-white hover:bg-stone-100 text-[#57534E] font-semibold px-2.5 py-1.5 rounded-lg text-xs transition"
                           >
-                            Reset
+                            Batal Foto Baru
                           </button>
                         )}
                       </div>
 
-                      {studioProgress.active && (
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[11px] font-semibold text-[#B45309]">
-                            <span>{studioProgress.stage}</span>
-                            <span className="font-mono tabular-nums">{studioProgress.pct}%</span>
-                          </div>
-                          <div className="h-1.5 w-full rounded-full bg-stone-200 overflow-hidden">
-                            <div
-                              className="h-full bg-[#D97706] transition-all duration-300"
-                              style={{ width: `${studioProgress.pct}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {studioCutoutDataUrl && !studioProgress.active && (
-                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5 justify-center sm:justify-start">
-                          <button
-                            type="button"
-                            onClick={() => void applyStudioMode("transparent")}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${
-                              studioMode === "transparent"
-                                ? "bg-[#1C1917] text-white border-[#1C1917]"
-                                : "bg-white text-[#57534E] border-[#E6E1D6] hover:bg-stone-50"
-                            }`}
-                          >
-                            Transparan Murni (PNG)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void applyStudioMode("template")}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${
-                              studioMode === "template"
-                                ? "bg-[#D97706] text-white border-[#D97706]"
-                                : "bg-white text-[#57534E] border-[#E6E1D6] hover:bg-stone-50"
-                            }`}
-                          >
-                            Template Katalog D&apos;Oleh-Oleh
-                          </button>
-                        </div>
-                      )}
-
-                      {selectedProductFile && !studioProgress.active && (
+                      {selectedProductFile && (
                         <p className="text-[11px] font-mono text-[#15803D] truncate tabular-nums">
                           Siap upload: {selectedProductFile.name} ({(selectedProductFile.size / 1024).toFixed(0)} KB)
                         </p>
