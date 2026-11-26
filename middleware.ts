@@ -38,11 +38,15 @@ export async function middleware(request: NextRequest) {
   const isSessionValid = await isAdminSessionValid(sessionToken);
 
   // Non-admin public pages (/, /catalog, /orders): always clear any active admin session cookie
-  // so returning to /admin after visiting landing page or buyer panel forces a fresh login.
+  // ONLY on real navigation (never on Next.js background <Link> prefetch requests!)
+  const isPrefetch =
+    request.headers.get("next-router-prefetch") === "1" ||
+    request.headers.get("purpose") === "prefetch" ||
+    (request.headers.get("sec-purpose") || "").includes("prefetch");
   const isNonAdminPublicPage = !path.startsWith("/admin") && !path.startsWith("/api/");
   if (isNonAdminPublicPage) {
     const response = NextResponse.next();
-    if (request.cookies.has(ADMIN_COOKIE_NAME)) {
+    if (!isPrefetch && request.cookies.has(ADMIN_COOKIE_NAME)) {
       response.cookies.set(ADMIN_COOKIE_NAME, "", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

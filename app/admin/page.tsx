@@ -1281,6 +1281,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <Link
               href="/"
+              prefetch={false}
               className="flex h-10 w-14 sm:h-11 sm:w-16 shrink-0 items-center justify-center rounded-xl overflow-hidden shadow-xs border border-[#1b3d2b]/20 bg-[#163826] hover:opacity-95 transition"
               title="D OLEH - OLEH — Beranda"
             >
@@ -1355,6 +1356,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
             <Link
               href="/catalog"
+              prefetch={false}
               className="flex items-center gap-1.5 rounded-xl border border-[#e4e1d7] bg-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-[#24251f] hover:bg-[#faf9f5] transition"
             >
               <Flaticon name="shop" className="text-xs text-[#E25C00]" />
