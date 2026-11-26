@@ -1074,8 +1074,8 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                   </div>
                 </div>
 
-                {/* COD CONFIRMATION NOTICE OR QRIS UPLOAD FORM */}
-                {order.payment_status !== "failed" && (order.payment_type === "cod" || order.payment_type === "cash") ? (
+                {/* COD CONFIRMATION NOTICE (Bottom duplicate QRIS upload form removed; QRIS uses top upload box) */}
+                {order.payment_status !== "failed" && (order.payment_type === "cod" || order.payment_type === "cash") && (
                   <div className="rounded-xl border border-[#E6E1D6] bg-[#FAF8F5] p-4 flex items-start gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
                       <Flaticon name="wallet" variant="sr" className="text-sm" />
@@ -1093,132 +1093,7 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                       </p>
                     </div>
                   </div>
-                ) : order.payment_status !== "failed" ? (
-                  <div className="rounded-xl border-2 border-dashed border-amber-300 bg-[#FFFDF8] p-4 sm:p-5 text-left space-y-3.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 pb-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#292a23] to-[#454639] text-[#E25C00] shadow-2xs">
-                        <Flaticon name="camera" className="text-sm" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs sm:text-sm font-bold text-[#24251f]">
-                          Form Upload Bukti Struk Transfer Pembeli
-                        </h4>
-                        <p className="text-[11px] text-[#7a7457]">
-                          Unggah foto/screenshot bukti pembayaran untuk verifikasi kilat admin Dioleh - oleh Dieng
-                        </p>
-                      </div>
-                    </div>
-
-                    {(order.payment_proof_url || paymentProof) && (
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-full shadow-2xs">
-                        <Flaticon name="check-circle" variant="sr" className="text-xs text-emerald-600" />
-                        <span>Struk Tersimpan di Sistem</span>
-                      </span>
-                    )}
-                  </div>
-
-                  {uploadSuccessMsg && (
-                    <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-2.5 text-xs text-emerald-800 font-semibold flex items-center gap-2">
-                      <Flaticon name="check-circle" variant="sr" className="text-xs text-emerald-600" />
-                      <span>{uploadSuccessMsg}</span>
-                    </div>
-                  )}
-
-                  {proofUploadError && (
-                    <div className="rounded-xl bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-800 font-semibold flex items-center gap-2">
-                      <Flaticon name="exclamation" className="text-xs text-rose-600" />
-                      <span>{proofUploadError}</span>
-                    </div>
-                  )}
-
-                  {/* Jika Struk Sudah Ada (Preview & Opsi Ganti) */}
-                  {(order.payment_proof_url || paymentProof) ? (
-                    <div className="space-y-3">
-                      <div className="relative rounded-2xl overflow-hidden border border-amber-200 bg-white p-3 shadow-2xs max-w-sm mx-auto">
-                        <div className="relative group cursor-pointer" onClick={() => setPreviewProofModalOpen(true)}>
-                          <img
-                            src={order.payment_proof_url || paymentProof!}
-                            alt="Preview Struk Transfer"
-                            className="w-full max-h-56 object-contain rounded-xl bg-slate-50 border border-slate-100"
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition rounded-xl flex items-center justify-center text-white text-xs font-bold gap-1.5">
-                            <Flaticon name="eye" className="text-sm" />
-                            <span>Klik untuk Perbesar</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 pt-2">
-                          <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                            <Flaticon name="check-circle" variant="sr" className="text-xs" />
-                            <span>Terkirim ke Admin Toko</span>
-                          </span>
-                          <span className="font-mono text-[10px] text-slate-400">
-                            {order.payment_proof_uploaded_at
-                              ? new Date(order.payment_proof_uploaded_at).toLocaleString("id-ID", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "Baru saja diunggah"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <label className="cursor-pointer flex items-center gap-1.5 rounded-xl border border-amber-300 bg-white hover:bg-amber-50 py-2 px-3.5 text-xs font-bold text-amber-950 transition shadow-2xs">
-                          <Flaticon name="camera" className="text-xs text-amber-700" />
-                          <span>{isUploadingProof ? "Mengunggah..." : "Ganti Foto Struk"}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            disabled={isUploadingProof}
-                            onChange={handleFileProofChange}
-                            className="hidden"
-                          />
-                        </label>
-
-                        <button
-                          type="button"
-                          onClick={() => setPreviewProofModalOpen(true)}
-                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 px-3.5 text-xs font-bold text-slate-700 transition shadow-2xs"
-                        >
-                          <Flaticon name="eye" className="text-xs text-slate-500" />
-                          <span>Lihat Foto Penuh</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Jika Belum Ada Struk (Form Pilih File) */
-                    <div className="space-y-2">
-                      <label className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-amber-300 bg-white hover:bg-amber-50/60 py-6 px-4 text-center transition group">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 group-hover:scale-105 transition text-amber-800 shadow-2xs">
-                          <Flaticon name="camera" className="text-xl" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-[#24251f]">
-                            {isUploadingProof ? "Sedang Mengunggah Bukti Struk..." : "Klik untuk Pilih Foto / Screenshot Struk Transfer"}
-                          </p>
-                          <p className="text-[11px] text-[#7a7457] mt-0.5">
-                            Mendukung kamera HP, screenshot mobile banking, QRIS, atau slip ATM (JPG, PNG, WEBP)
-                          </p>
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={isUploadingProof}
-                          onChange={handleFileProofChange}
-                          className="hidden"
-                        />
-                      </label>
-                      <p className="text-[11px] text-center text-slate-400">
-                        Setelah dipilih, foto struk otomatis tersimpan ke pesanan dan diteruskan ke kartu order admin.
-                      </p>
-                    </div>
-                  )}
-                </div>
-                ) : null}
+                )}
 
                 {/* Single Unified WhatsApp Confirmation CTA */}
                 <div className="pt-2">
