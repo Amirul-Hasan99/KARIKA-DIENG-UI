@@ -30,38 +30,7 @@ function ensureDataFile() {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(ORDERS_FILE)) {
-      // Seed initial dummy/test order so search testing works immediately
-      const initialSeed: Order[] = [
-        {
-          id: "ord_demo_jyqf",
-          order_number: "GC-261111-DELIVERY-JYQF",
-          table_id: "delivery",
-          table_number: "delivery",
-          customer_name: "Budiono",
-          customer_phone: "083122046357",
-          delivery_address: "Kawasan Dieng (Radius 8 km)",
-          coordinates: { lat: -7.204176, lng: 109.911214 },
-          delivery_distance_km: 2.5,
-          total_amount: 110000,
-          payment_status: "pending",
-          order_status: "received",
-          delivery_status: "pending",
-          payment_type: "qris",
-          items: [
-            {
-              menu_id: "carica-biasa",
-              name: "Carica Biasa · isi 6",
-              price: 22000,
-              qty: 5,
-              selected_modifiers: [],
-              subtotal: 110000,
-            },
-          ],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ];
-      fs.writeFileSync(ORDERS_FILE, JSON.stringify(initialSeed, null, 2), "utf-8");
+      fs.writeFileSync(ORDERS_FILE, "[]", "utf-8");
     }
   } catch (err) {
     console.warn("[order-store] Failed to ensure data file:", err);

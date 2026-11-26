@@ -53,8 +53,8 @@ export default function AdminLoginForm() {
         </Link>
         <Card className="rounded-3xl shadow-sm border border-[#e8e5dc]">
           <CardHeader className="space-y-4 p-7 pb-5 sm:p-8 sm:pb-5">
-            <div className="flex h-12 w-18 items-center justify-center rounded-xl bg-[#163826] border border-[#1b3d2b]/20 shadow-xs overflow-hidden">
-              <img src="/images/logo-d-oleh2.webp" alt="D OLEH-OLEH" className="h-full w-full object-cover" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#163826] border border-[#1b3d2b]/20 shadow-xs overflow-hidden">
+              <img src="/icon-d-oleh2.png" alt="D OLEH-OLEH" className="h-full w-full object-cover" />
             </div>
             <div>
               <CardTitle className="text-2xl font-bold tracking-tight">
