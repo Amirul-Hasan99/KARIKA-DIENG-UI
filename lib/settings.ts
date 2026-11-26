@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { Courier } from "@/types";
 import { DEFAULT_COURIERS } from "./couriers";
+import { getNeonSql, ensureNeonTables } from "./db";
 
 export { DEFAULT_COURIERS };
 
@@ -60,75 +61,125 @@ export function formatPhoneDisplay(phone: string): string {
   return standard;
 }
 
-export function getStoreSettings(): StoreSettings {
+function normalizeSettings(parsed: any): StoreSettings {
+  const rawWa = parsed?.admin_whatsapp || DEFAULT_SETTINGS.admin_whatsapp;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...parsed,
+    couriers: Array.isArray(parsed?.couriers) ? parsed.couriers : DEFAULT_COURIERS,
+    admin_whatsapp: rawWa,
+    admin_whatsapp_display: formatPhoneDisplay(rawWa),
+  };
+}
+
+function readLocalSettings(): StoreSettings | null {
+  try {
+    if (fs.existsSync(SETTINGS_FILE_PATH)) {
+      const raw = fs.readFileSync(SETTINGS_FILE_PATH, "utf-8");
+      return normalizeSettings(JSON.parse(raw));
+    }
+  } catch (err) {
+    console.warn("[settings] Failed to read settings.json:", err);
+  }
+  return null;
+}
+
+function writeLocalSettingsSafe(settings: StoreSettings): void {
+  // Never throw on read-only serverless filesystems (e.g. Vercel /var/task)
   try {
     const dir = path.dirname(SETTINGS_FILE_PATH);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    if (fs.existsSync(SETTINGS_FILE_PATH)) {
-      const raw = fs.readFileSync(SETTINGS_FILE_PATH, "utf-8");
-      const parsed = JSON.parse(raw);
-      return {
-        ...DEFAULT_SETTINGS,
-        ...parsed,
-        couriers: Array.isArray(parsed.couriers) && parsed.couriers.length > 0 ? parsed.couriers : DEFAULT_COURIERS,
-        admin_whatsapp_display: formatPhoneDisplay(parsed.admin_whatsapp || DEFAULT_SETTINGS.admin_whatsapp),
-      };
+    fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(settings, null, 2), "utf-8");
+  } catch {
+    // Non-fatal in production serverless environment
+  }
+}
+
+export async function getStoreSettings(): Promise<StoreSettings> {
+  // 1. Try Neon PostgreSQL first (authoritative in cloud production)
+  try {
+    await ensureNeonTables();
+    const sql = getNeonSql();
+    if (sql && global.__neonReachable !== false) {
+      const rows: any = await sql`
+        SELECT data FROM store_settings WHERE id = 'default' LIMIT 1;
+      `;
+      if (Array.isArray(rows) && rows.length > 0 && rows[0]?.data) {
+        const parsed = typeof rows[0].data === "string" ? JSON.parse(rows[0].data) : rows[0].data;
+        const normalized = normalizeSettings(parsed);
+        writeLocalSettingsSafe(normalized);
+        return normalized;
+      }
     }
   } catch (err) {
-    console.warn("[settings] Failed to read settings.json, using default:", err);
+    console.warn("[settings] Neon read fallback:", err);
   }
 
-  // Save default settings file if not exists
-  try {
-    fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(DEFAULT_SETTINGS, null, 2), "utf-8");
-  } catch {}
+  // 2. Fallback to local file
+  const local = readLocalSettings();
+  if (local) return local;
 
+  // 3. Default
+  writeLocalSettingsSafe(DEFAULT_SETTINGS);
   return DEFAULT_SETTINGS;
 }
 
-export function updateStoreSettings(updates: Partial<StoreSettings>): StoreSettings {
-  const current = getStoreSettings();
+export async function updateStoreSettings(updates: Partial<StoreSettings>): Promise<StoreSettings> {
+  const current = await getStoreSettings();
   const rawWa = updates.admin_whatsapp ? String(updates.admin_whatsapp).trim() : current.admin_whatsapp;
-  
+
   const updated: StoreSettings = {
     ...current,
     ...updates,
     admin_whatsapp: rawWa,
     admin_whatsapp_display: formatPhoneDisplay(rawWa),
-    couriers: updates.couriers ? updates.couriers : current.couriers,
+    couriers: updates.couriers !== undefined ? updates.couriers : current.couriers,
     updated_at: new Date().toISOString(),
   };
 
+  // 1. Persist to Neon PostgreSQL
   try {
-    const dir = path.dirname(SETTINGS_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    await ensureNeonTables();
+    const sql = getNeonSql();
+    if (sql && global.__neonReachable !== false) {
+      await sql`
+        INSERT INTO store_settings (id, data, updated_at)
+        VALUES ('default', ${JSON.stringify(updated)}::jsonb, NOW())
+        ON CONFLICT (id) DO UPDATE SET
+          data = EXCLUDED.data,
+          updated_at = NOW();
+      `;
     }
-    fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(updated, null, 2), "utf-8");
   } catch (err) {
-    console.error("[settings] Failed to save settings.json:", err);
-    throw err;
+    console.error("[settings] Failed to save to Neon:", err);
+    if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+      throw new Error("Gagal menyimpan pengaturan ke database cloud.");
+    }
   }
+
+  // 2. Non-throwing local cache update
+  writeLocalSettingsSafe(updated);
 
   return updated;
 }
 
-export function getStoreCouriers(): Courier[] {
-  return getStoreSettings().couriers;
+export async function getStoreCouriers(): Promise<Courier[]> {
+  const settings = await getStoreSettings();
+  return settings.couriers;
 }
 
-export function saveStoreCourier(courierData: {
+export async function saveStoreCourier(courierData: {
   id?: string;
   name: string;
   phone: string;
   zone?: string;
   vehicle?: string;
   is_active?: boolean;
-}): { couriers: Courier[]; saved: Courier } {
-  const settings = getStoreSettings();
-  let couriers = [...settings.couriers];
+}): Promise<{ couriers: Courier[]; saved: Courier; settings: StoreSettings }> {
+  const settings = await getStoreSettings();
+  const couriers = [...settings.couriers];
 
   if (courierData.id) {
     // Edit existing courier
@@ -137,10 +188,11 @@ export function saveStoreCourier(courierData: {
       couriers[idx] = {
         ...couriers[idx],
         ...courierData,
+        name: courierData.name.trim(),
         phone: String(courierData.phone).trim(),
       };
-      updateStoreSettings({ couriers });
-      return { couriers, saved: couriers[idx] };
+      const updatedSettings = await updateStoreSettings({ couriers });
+      return { couriers: updatedSettings.couriers, saved: couriers[idx], settings: updatedSettings };
     }
   }
 
@@ -155,13 +207,13 @@ export function saveStoreCourier(courierData: {
   };
 
   couriers.push(newCourier);
-  updateStoreSettings({ couriers });
-  return { couriers, saved: newCourier };
+  const updatedSettings = await updateStoreSettings({ couriers });
+  return { couriers: updatedSettings.couriers, saved: newCourier, settings: updatedSettings };
 }
 
-export function deleteStoreCourier(courierId: string): Courier[] {
-  const settings = getStoreSettings();
+export async function deleteStoreCourier(courierId: string): Promise<{ couriers: Courier[]; settings: StoreSettings }> {
+  const settings = await getStoreSettings();
   const filtered = settings.couriers.filter((c) => c.id !== courierId);
-  updateStoreSettings({ couriers: filtered });
-  return filtered;
+  const updatedSettings = await updateStoreSettings({ couriers: filtered });
+  return { couriers: updatedSettings.couriers, settings: updatedSettings };
 }

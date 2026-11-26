@@ -104,6 +104,15 @@ export async function ensureNeonTables() {
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
       `;
+
+      // 5. Create store_settings table for cloud production persistence (WA, QRIS, Couriers)
+      await sql`
+        CREATE TABLE IF NOT EXISTS store_settings (
+          id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
+          data JSONB NOT NULL,
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+      `;
     })();
 
     const timeoutPromise = new Promise((_, reject) =>

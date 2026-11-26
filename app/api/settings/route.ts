@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const settings = getStoreSettings();
+    const settings = await getStoreSettings();
     return NextResponse.json(
       {
         success: true,
@@ -71,24 +71,24 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      const res = saveStoreCourier(courier);
+      const res = await saveStoreCourier(courier);
       return NextResponse.json({
         success: true,
         message: "Data kurir berhasil disimpan",
         courier: res.saved,
         couriers: res.couriers,
-        settings: getStoreSettings(),
+        settings: res.settings,
       });
     }
 
     // Aksi khusus kurir: delete
     if (action === "delete_courier" && courierId) {
-      const updatedCouriers = deleteStoreCourier(courierId);
+      const res = await deleteStoreCourier(courierId);
       return NextResponse.json({
         success: true,
         message: "Kurir berhasil dihapus",
-        couriers: updatedCouriers,
-        settings: getStoreSettings(),
+        couriers: res.couriers,
+        settings: res.settings,
       });
     }
 
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const updated = updateStoreSettings({
+    const updated = await updateStoreSettings({
       ...(admin_whatsapp !== undefined ? { admin_whatsapp: String(admin_whatsapp).trim() } : {}),
       ...(qris_image_url !== undefined ? { qris_image_url: String(qris_image_url).trim() } : {}),
       ...(qris_merchant_name !== undefined ? { qris_merchant_name: String(qris_merchant_name).trim() } : {}),
