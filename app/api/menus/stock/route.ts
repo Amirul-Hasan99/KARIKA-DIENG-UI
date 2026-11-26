@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMenuStockMap, setMenuItemAvailability } from "@/lib/order-store";
+import { getAllKarikaProducts, updateKarikaProduct } from "@/lib/karika-products";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const stock = getMenuStockMap();
+  const products = await getAllKarikaProducts();
+  const stock: Record<string, boolean> = { ...getMenuStockMap() };
+  for (const p of products) {
+    stock[p.id] = p.is_available !== false;
+  }
   return NextResponse.json({ success: true, stock });
 }
 
@@ -19,6 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     setMenuItemAvailability(menuId, isAvailable);
+    await updateKarikaProduct(menuId, { is_available: isAvailable });
 
     return NextResponse.json({
       success: true,
