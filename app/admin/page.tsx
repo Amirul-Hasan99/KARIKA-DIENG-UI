@@ -305,26 +305,37 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Cash pending orders
+  // Cash / COD pending orders
   const cashPendingOrders = useMemo(() => {
     return orders.filter(
-      (o) => o.payment_type === "cash" && o.payment_status === "pending"
+      (o) =>
+        (o.payment_type === "cash" || o.payment_type === "cod") &&
+        o.payment_status === "pending"
     );
   }, [orders]);
 
-  // Confirm cash payment
-  const handleConfirmCash = async (orderId: string) => {
+  // Confirm payment (Cash/COD or QRIS manual verification)
+  const handleConfirmCash = async (orderId: string, paymentType?: string) => {
     try {
       const res = await fetch("/api/orders/confirm-cash", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, paymentType }),
       });
       if (res.ok) {
+        const data = await res.json();
+        if (data.order) {
+          setSelectedOrderForProof((prev) =>
+            prev && prev.id === orderId ? data.order : prev
+          );
+          setSelectedOrderDetail((prev) =>
+            prev && prev.id === orderId ? data.order : prev
+          );
+        }
         if (soundEnabled) playChime();
       }
     } catch (e) {
-      console.error("Confirm cash error:", e);
+      console.error("Confirm payment error:", e);
     }
   };
 
@@ -879,12 +890,17 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
         if (order.payment_status === "failed") return false;
       }
 
+      const isCompletedOrder =
+        order.order_status === "completed" || order.delivery_status === "delivered";
+
       const matchTab =
         kdsFilter === "all"
-          ? order.order_status !== "completed"
+          ? !isCompletedOrder
+          : kdsFilter === "completed"
+          ? isCompletedOrder
           : kdsFilter === "cancelled"
           ? true
-          : order.order_status === kdsFilter;
+          : !isCompletedOrder && order.order_status === kdsFilter;
 
       const q = searchQuery.trim().toLowerCase();
       const matchSearch =
@@ -1026,12 +1042,14 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
   const counts = useMemo(() => {
     const validOrders = orders.filter((o) => o.payment_status !== "failed");
+    const isCompleted = (o: Order) =>
+      o.order_status === "completed" || o.delivery_status === "delivered";
     return {
-      allActive: validOrders.filter((o) => o.order_status !== "completed").length,
-      received: validOrders.filter((o) => o.order_status === "received").length,
-      cooking: validOrders.filter((o) => o.order_status === "cooking").length,
-      ready: validOrders.filter((o) => o.order_status === "ready").length,
-      completed: validOrders.filter((o) => o.order_status === "completed").length,
+      allActive: validOrders.filter((o) => !isCompleted(o)).length,
+      received: validOrders.filter((o) => !isCompleted(o) && o.order_status === "received").length,
+      cooking: validOrders.filter((o) => !isCompleted(o) && o.order_status === "cooking").length,
+      ready: validOrders.filter((o) => !isCompleted(o) && o.order_status === "ready").length,
+      completed: validOrders.filter((o) => isCompleted(o)).length,
       cancelled: orders.filter((o) => o.payment_status === "failed").length,
     };
   }, [orders]);
@@ -1084,45 +1102,119 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
     }
   };
 
-  // Ekspor Laporan Excel (.csv dengan BOM UTF-8)
+  // Ekspor Laporan Excel Terstruktur (.xls dengan tabel berbingkai & aksen tema Dieng Highland Craft)
   const handleExportExcel = () => {
-    const headers = [
-      "No. Pesanan",
-      "Waktu Transaksi",
-      "Nama Pelanggan",
-      "Nomor WhatsApp",
-      "Alamat Pengantaran",
-      "Titik Maps GPS",
-      "Metode Pembayaran",
-      "Status Pembayaran",
-      "Total Belanja (Rp)",
-      "Rincian Item Oleh-Oleh",
-    ];
+    const periodLabel = getDateFilterLabel();
+    const pendingCount = filteredTransactions.filter((o) => o.payment_status === "pending").length;
+    const printedAt = new Date().toLocaleString("id-ID");
 
-    const rows = filteredTransactions.map((o) => {
-      const itemsStr = o.items
-        .map((i) => `${i.qty}x ${i.name} (Rp${i.price})`)
-        .join("; ")
-        .replace(/"/g, '""');
-      const mapsCoords = o.coordinates ? `${o.coordinates.lat},${o.coordinates.lng}` : "-";
-      return [
-        `"${o.order_number}"`,
-        `"${new Date(o.created_at).toLocaleString("id-ID")}"`,
-        `"${(o.customer_name || "Pelanggan").replace(/"/g, '""')}"`,
-        `"${(o.customer_phone || "-").replace(/"/g, '""')}"`,
-        `"${(o.delivery_address || `Radius ${o.delivery_distance_km || 8} km`).replace(/"/g, '""')}"`,
-        `"${mapsCoords}"`,
-        `"${o.payment_type ? o.payment_type.toUpperCase() : "QRIS"}"`,
-        `"${o.payment_status === "settlement" ? "Lunas" : o.payment_status === "failed" ? "Dibatalkan" : "Menunggu Bayar"}"`,
-        o.total_amount,
-        `"${itemsStr}"`,
-      ];
+    const rowsHtml = filteredTransactions
+      .map((o, idx) => {
+        const itemsStr = o.items
+          .map((i) => `${i.qty}x ${escapeHtml(i.name)} (${formatRupiah(i.price)})`)
+          .join("<br/>");
+        const mapsCoords = o.coordinates ? `${o.coordinates.lat}, ${o.coordinates.lng}` : "-";
+        const isCod = o.payment_type === "cod" || o.payment_type === "cash";
+        const methodLabel = isCod ? "COD / CASH" : "QRIS";
+        const statusLabel =
+          o.payment_status === "settlement"
+            ? "LUNAS"
+            : o.payment_status === "failed"
+            ? "DIBATALKAN"
+            : "BELUM LUNAS";
+        const statusStyle =
+          o.payment_status === "settlement"
+            ? "background-color:#DCFCE7;color:#15803D;font-weight:bold;"
+            : o.payment_status === "failed"
+            ? "background-color:#FEE2E2;color:#B91C1C;font-weight:bold;"
+            : "background-color:#FEF3C7;color:#B45309;font-weight:bold;";
+        const rowBg = idx % 2 === 1 ? "background-color:#FAF8F5;" : "background-color:#FFFFFF;";
+
+        return `
+          <tr style="${rowBg}">
+            <td style="border:1px solid #D6D3CD;padding:6px;text-align:center;">${idx + 1}</td>
+            <td style="border:1px solid #D6D3CD;padding:6px;font-family:Consolas,monospace;font-weight:bold;">${escapeHtml(o.order_number)}</td>
+            <td style="border:1px solid #D6D3CD;padding:6px;">${new Date(o.created_at).toLocaleString("id-ID")}</td>
+            <td style="border:1px solid #D6D3CD;padding:6px;font-weight:bold;">${escapeHtml(o.customer_name || "Pelanggan")}</td>
+            <td style="border:1px solid #D6D3CD;padding:6px;mso-number-format:'\\@';">${escapeHtml(o.customer_phone || "-")}</td>
+            <td style="border:1px solid #D6D3CD;padding:6px;">${escapeHtml(o.delivery_address || `Radius ${o.delivery_distance_km || 8} km`)}<br/><span style="color:#57534E;font-size:10px;">GPS: ${mapsCoords}</span></td>
+            <td style="border:1px solid #D6D3CD;padding:6px;">${itemsStr}</td>
+            <td style="border:1px solid #D6D3CD;padding:6px;text-align:center;font-weight:bold;">${methodLabel}</td>
+            <td style="border:1px solid #D6D3CD;padding:6px;text-align:center;${statusStyle}">${statusLabel}</td>
+            <td style="border:1px solid #D6D3CD;padding:6px;text-align:right;font-weight:bold;mso-number-format:'#,##0';">${o.total_amount}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    const excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Laporan Penjualan</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+      </head>
+      <body style="font-family:Calibri,Arial,sans-serif;color:#1C1917;">
+        <table style="border-collapse:collapse;width:100%;">
+          <tr>
+            <td colspan="10" style="background-color:#163826;color:#FDE68A;font-size:16px;font-weight:bold;padding:12px;border:1px solid #163826;">
+              D'OLEH-OLEH DIENG — LAPORAN REKAPITULASI PENJUALAN (${escapeHtml(periodLabel.toUpperCase())})
+            </td>
+          </tr>
+          <tr>
+            <td colspan="10" style="background-color:#D97706;height:4px;padding:0;border:none;"></td>
+          </tr>
+          <tr>
+            <td colspan="4" style="background-color:#F7F5F0;padding:8px;border:1px solid #E6E1D6;font-size:11px;">
+              <strong>Lokasi Toko:</strong> ${escapeHtml(settingsForm.qris_merchant_name || "D'Oleh-Oleh Dieng")} · Titik 0 Km Dieng<br/>
+              <strong>WhatsApp Toko:</strong> ${escapeHtml(settingsForm.admin_whatsapp || "083122046357")}
+            </td>
+            <td colspan="3" style="background-color:#F7F5F0;padding:8px;border:1px solid #E6E1D6;font-size:11px;">
+              <strong>Total Transaksi:</strong> ${filteredTransactions.length} Pesanan<br/>
+              <strong>Lunas / Pending:</strong> ${settledOrders.length} Lunas / ${pendingCount} Belum Lunas
+            </td>
+            <td colspan="3" style="background-color:#FEF3C7;padding:8px;border:1px solid #E6E1D6;font-size:12px;text-align:right;">
+              <strong>Total Omzet Lunas:</strong><br/>
+              <span style="font-size:14px;font-weight:bold;color:#15803D;">${formatRupiah(totalOmzet)}</span>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="10" style="padding:4px;font-size:10px;color:#57534E;">Dicetak pada: ${printedAt}</td>
+          </tr>
+          <thead>
+            <tr>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:center;">No</th>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:left;">No. Pesanan</th>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:left;">Waktu Transaksi</th>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:left;">Nama Pelanggan</th>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:left;">Nomor WhatsApp</th>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:left;">Alamat &amp; Titik GPS</th>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:left;">Rincian Item Oleh-Oleh</th>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:center;">Metode</th>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:center;">Status Bayar</th>
+              <th style="background-color:#163826;color:#FFFFFF;border:1px solid #163826;padding:8px;text-align:right;">Total (Rp)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="10" style="border:1px solid #D6D3CD;padding:16px;text-align:center;">Tidak ada data transaksi pada periode ini.</td></tr>'}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="9" style="background-color:#FAF8F5;border:1px solid #163826;padding:9px;text-align:right;font-weight:bold;color:#1C1917;">
+                TOTAL PENDAPATAN LUNAS (OMZET BERSIH):
+              </td>
+              <td style="background-color:#DCFCE7;border:1px solid #163826;padding:9px;text-align:right;font-weight:bold;color:#15803D;mso-number-format:'#,##0';">
+                ${totalOmzet}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(["\uFEFF" + excelHtml], {
+      type: "application/vnd.ms-excel;charset=utf-8;",
     });
-
-    const csvContent =
-      "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -1130,14 +1222,14 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
       dateFilter === "custom"
         ? `${customStartDate}_sd_${customEndDate}`
         : dateFilter;
-    link.download = `Laporan_Penjualan_Dioleh_Oleh_Dieng_${filterSuffix}_${new Date().toISOString().split("T")[0]}.csv`;
+    link.download = `Laporan_Penjualan_DOlehOleh_${filterSuffix}_${new Date().toISOString().split("T")[0]}.xls`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
-  // Ekspor Laporan PDF Resmi Berbahasa Indonesia dengan Header & Footer Toko
+  // Ekspor Laporan PDF Resmi bertema "Dieng Highland Craft"
   const handleExportPDF = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
@@ -1145,43 +1237,49 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
       return;
     }
 
+    const pendingCount = filteredTransactions.filter((o) => o.payment_status === "pending").length;
+    const periodLabel = getDateFilterLabel();
+
     const itemsHtml = filteredTransactions
-      .map(
-        (o, idx) => `
-        <tr>
-          <td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center;">${idx + 1}</td>
-          <td style="padding: 7px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold;">${escapeHtml(o.order_number)}</td>
-          <td style="padding: 7px; border: 1px solid #cbd5e1;">${new Date(o.created_at).toLocaleString("id-ID")}</td>
-          <td style="padding: 7px; border: 1px solid #cbd5e1;">
-            <strong>${escapeHtml(o.customer_name || "Pelanggan")}</strong><br/>
-            <span style="font-size: 11px; color: #475569;">${escapeHtml(o.customer_phone || "-")}</span>
+      .map((o, idx) => {
+        const isCod = o.payment_type === "cod" || o.payment_type === "cash";
+        return `
+        <tr style="background:${idx % 2 === 1 ? "#FAF8F5" : "#FFFFFF"};">
+          <td style="padding:8px 7px;border:1px solid #E6E1D6;text-align:center;">${idx + 1}</td>
+          <td style="padding:8px 7px;border:1px solid #E6E1D6;font-family:'JetBrains Mono',monospace;font-weight:700;color:#1C1917;">#${escapeHtml(o.order_number)}</td>
+          <td style="padding:8px 7px;border:1px solid #E6E1D6;color:#57534E;">${new Date(o.created_at).toLocaleString("id-ID")}</td>
+          <td style="padding:8px 7px;border:1px solid #E6E1D6;">
+            <strong style="color:#1C1917;">${escapeHtml(o.customer_name || "Pelanggan")}</strong><br/>
+            <span style="font-size:10px;font-family:monospace;color:#57534E;">${escapeHtml(o.customer_phone || "-")}</span>
           </td>
-          <td style="padding: 7px; border: 1px solid #cbd5e1; font-size: 11px;">
+          <td style="padding:8px 7px;border:1px solid #E6E1D6;font-size:10.5px;color:#57534E;">
             ${escapeHtml(o.delivery_address || "Kawasan Dataran Tinggi Dieng")}
           </td>
-          <td style="padding: 7px; border: 1px solid #cbd5e1; font-size: 11px;">
+          <td style="padding:8px 7px;border:1px solid #E6E1D6;font-size:10.5px;color:#1C1917;">
             ${o.items.map((i) => `${i.qty}x ${escapeHtml(i.name)}`).join("<br/>")}
           </td>
-          <td style="padding: 7px; border: 1px solid #cbd5e1; text-transform: uppercase; font-size: 11px;">
-            ${escapeHtml(o.payment_type || "QRIS")}
-          </td>
-          <td style="padding: 7px; border: 1px solid #cbd5e1; text-align: center; font-size: 11px;">
-            <span style="padding: 2px 6px; border-radius: 4px; font-weight: bold; background: ${
-              o.payment_status === "settlement"
-                ? "#dcfce7; color: #166534"
-                : o.payment_status === "failed"
-                ? "#fee2e2; color: #991b1b"
-                : "#fef3c7; color: #92400e"
-            }">
-              ${o.payment_status === "settlement" ? "LUNAS" : o.payment_status === "failed" ? "DIBATALKAN" : "PENDING"}
+          <td style="padding:8px 7px;border:1px solid #E6E1D6;text-align:center;font-weight:700;font-size:10px;">
+            <span style="padding:2px 6px;border-radius:4px;background:${isCod ? "#E7E5E4;color:#1C1917" : "#FEF3C7;color:#B45309"};">
+              ${isCod ? "COD / CASH" : "QRIS"}
             </span>
           </td>
-          <td style="padding: 7px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold;">
+          <td style="padding:8px 7px;border:1px solid #E6E1D6;text-align:center;font-size:10px;">
+            <span style="padding:2px 7px;border-radius:4px;font-weight:700;background:${
+              o.payment_status === "settlement"
+                ? "#DCFCE7;color:#15803D"
+                : o.payment_status === "failed"
+                ? "#FEE2E2;color:#B91C1C"
+                : "#FEF3C7;color:#B45309"
+            }">
+              ${o.payment_status === "settlement" ? "LUNAS" : o.payment_status === "failed" ? "DIBATALKAN" : "BELUM LUNAS"}
+            </span>
+          </td>
+          <td style="padding:8px 7px;border:1px solid #E6E1D6;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:#1C1917;">
             ${formatRupiah(o.total_amount)}
           </td>
         </tr>
-      `
-      )
+      `;
+      })
       .join("");
 
     const html = `
@@ -1189,74 +1287,82 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
       <html lang="id">
       <head>
         <meta charset="utf-8"/>
-        <title>Laporan Penjualan - Dioleh - oleh Dieng</title>
+        <title>Laporan Penjualan - D'Oleh-Oleh Dieng (${escapeHtml(periodLabel)})</title>
         <style>
           @page { size: A4 landscape; margin: 12mm; }
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; margin: 0; padding: 15px; font-size: 12px; }
-          .header { border-bottom: 3px double #E25C00; padding-bottom: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; }
-          .title { font-size: 20px; font-weight: 900; color: #24251f; margin: 0; }
-          .subtitle { font-size: 12px; color: #64748b; margin: 2px 0 0 0; }
-          .report-info { text-align: right; font-size: 12px; }
-          .kpi-box { display: flex; gap: 15px; margin-bottom: 14px; }
-          .kpi-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; background: #f8fafc; flex: 1; }
-          .kpi-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold; }
-          .kpi-val { font-size: 16px; font-weight: bold; color: #0f172a; margin-top: 2px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11px; }
-          th { background: #292a23; color: #ffffff; padding: 9px 7px; font-size: 10px; text-transform: uppercase; text-align: left; border: 1px solid #334155; }
-          .footer { border-top: 1px solid #cbd5e1; padding-top: 10px; font-size: 10px; color: #64748b; display: flex; justify-content: space-between; }
+          body { font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif; color: #1C1917; background: #FFFFFF; margin: 0; padding: 12px; font-size: 11.5px; }
+          .banner { background: #163826; color: #FFFFFF; border-radius: 10px 10px 0 0; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+          .accent-bar { height: 5px; background: #D97706; border-radius: 0 0 4px 4px; margin-bottom: 14px; }
+          .title { font-size: 19px; font-weight: 800; color: #FDE68A; margin: 0; letter-spacing: -0.02em; }
+          .subtitle { font-size: 11px; color: #D1FAE5; margin: 3px 0 0 0; }
+          .report-info { text-align: right; }
+          .period-pill { display: inline-block; background: #D97706; color: #FFFFFF; padding: 3px 10px; border-radius: 6px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+          .kpi-box { display: flex; gap: 12px; margin-bottom: 14px; }
+          .kpi-card { border: 1px solid #E6E1D6; border-radius: 8px; padding: 10px 14px; background: #F7F5F0; flex: 1; }
+          .kpi-label { font-size: 10px; color: #57534E; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em; }
+          .kpi-val { font-size: 16px; font-weight: 800; color: #1C1917; margin-top: 3px; font-variant-numeric: tabular-nums; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 11px; }
+          th { background: #163826; color: #FFFFFF; padding: 9px 7px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; text-align: left; border: 1px solid #163826; }
+          .footer { border-top: 1px solid #E6E1D6; padding-top: 10px; font-size: 10px; color: #57534E; display: flex; justify-content: space-between; }
+          @media print { body { padding: 0; } }
         </style>
       </head>
       <body>
-        <div class="header">
+        <div class="banner">
           <div>
-            <h1 class="title">DIOLEH - OLEH DIENG</h1>
+            <h1 class="title">D'OLEH-OLEH DIENG</h1>
             <p class="subtitle">Sentra Oleh-Oleh Khas Dataran Tinggi Dieng &amp; Kabupaten Wonosobo</p>
-            <p style="font-size: 11px; color: #475569; margin: 2px 0 0 0;">Titik 0 Km Dieng, Kejajar, Wonosobo, Jawa Tengah · WA Toko: 0831-2204-6357</p>
+            <p style="font-size:10.5px;color:#A7F3D0;margin:3px 0 0 0;">Titik 0 Km Dieng, Kejajar, Wonosobo · WA Toko: ${escapeHtml(settingsForm.admin_whatsapp || "0831-2204-6357")}</p>
           </div>
           <div class="report-info">
-            <h2 style="font-size: 14px; margin: 0; font-weight: bold; color: #b45309;">LAPORAN REKAPITULASI PENJUALAN</h2>
-            <p style="margin: 3px 0 0 0;">Periode: <strong>${getDateFilterLabel()}</strong></p>
-            <p style="margin: 2px 0 0 0; font-size: 10px; color: #64748b;">Dicetak pada: ${new Date().toLocaleString("id-ID")}</p>
+            <span class="period-pill">Periode: ${escapeHtml(periodLabel)}</span>
+            <h2 style="font-size:14px;margin:6px 0 0 0;font-weight:800;color:#FFFFFF;">LAPORAN REKAPITULASI PENJUALAN</h2>
+            <p style="margin:2px 0 0 0;font-size:10px;color:#D1FAE5;">Dicetak pada: ${new Date().toLocaleString("id-ID")}</p>
           </div>
         </div>
+        <div class="accent-bar"></div>
 
         <div class="kpi-box">
           <div class="kpi-card">
-            <div class="kpi-label">Total Transaksi Sesuai Filter</div>
+            <div class="kpi-label">Total Pesanan</div>
             <div class="kpi-val">${filteredTransactions.length} Pesanan</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Transaksi Berhasil (Lunas)</div>
-            <div class="kpi-val" style="color: #15803d;">${settledOrders.length} Pesanan</div>
+            <div class="kpi-label">Pembayaran Lunas</div>
+            <div class="kpi-val" style="color:#15803D;">${settledOrders.length} Pesanan</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Total Pendapatan Bersih (Omzet)</div>
-            <div class="kpi-val" style="color: #15803d;">${formatRupiah(totalOmzet)}</div>
+            <div class="kpi-label">Belum Lunas (Pending)</div>
+            <div class="kpi-val" style="color:#B45309;">${pendingCount} Pesanan</div>
+          </div>
+          <div class="kpi-card" style="background:#FEF3C7;border-color:#FDE68A;">
+            <div class="kpi-label" style="color:#B45309;">Total Omzet Bersih (Lunas)</div>
+            <div class="kpi-val" style="color:#15803D;">${formatRupiah(totalOmzet)}</div>
           </div>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th style="width: 25px; text-align: center;">No</th>
+              <th style="width:26px;text-align:center;">No</th>
               <th>No. Order</th>
               <th>Waktu</th>
               <th>Pelanggan</th>
               <th>Alamat Antar</th>
               <th>Paket Oleh-Oleh</th>
-              <th>Metode</th>
-              <th style="text-align: center;">Status</th>
-              <th style="text-align: right;">Total</th>
+              <th style="text-align:center;">Metode</th>
+              <th style="text-align:center;">Status</th>
+              <th style="text-align:right;">Total</th>
             </tr>
           </thead>
           <tbody>
-            ${itemsHtml || '<tr><td colspan="9" style="text-align:center; padding: 20px;">Tidak ada transaksi pada periode yang dipilih.</td></tr>'}
+            ${itemsHtml || '<tr><td colspan="9" style="text-align:center;padding:20px;border:1px solid #E6E1D6;">Tidak ada transaksi pada periode yang dipilih.</td></tr>'}
           </tbody>
         </table>
 
         <div class="footer">
-          <span>Dioleh - oleh Dieng · Dokumen Laporan Rekapitulasi Kasir &amp; Penjualan Resmi</span>
-          <span>Dicetak otomatis oleh Sistem Manajemen Kasir Dioleh - oleh Dieng</span>
+          <span><strong>D'Oleh-Oleh Dieng</strong> · Dokumen Laporan Rekapitulasi Resmi</span>
+          <span>Dicetak otomatis oleh Sistem Operasional D'Oleh-Oleh Dieng</span>
         </div>
 
         <script>
@@ -1886,15 +1992,23 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                               </span>
                             </div>
 
-                            {order.payment_status !== "settlement" && (
-                              <button
-                                onClick={() => handleConfirmCash(order.id)}
-                                className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 text-xs font-bold transition shadow-xs cursor-pointer"
-                              >
-                                <Flaticon name="check" className="text-xs" />
-                                <span>Konfirmasi / ACC Pembayaran Lunas</span>
-                              </button>
-                            )}
+                            {order.payment_status !== "settlement" && (() => {
+                              const isCod = order.payment_type === "cod" || order.payment_type === "cash";
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmCash(order.id, isCod ? "cod" : "qris")}
+                                  className="w-full min-h-[40px] flex items-center justify-center gap-1.5 rounded-lg bg-[#15803D] hover:bg-[#166534] text-white py-2 px-3 text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-[0.99]"
+                                >
+                                  <Flaticon name="check" className="text-xs" />
+                                  <span>
+                                    {isCod
+                                      ? "Sudah Bayar Cash (Tandai Lunas)"
+                                      : "Konfirmasi Pembayaran QRIS Lunas"}
+                                  </span>
+                                </button>
+                              );
+                            })()}
 
                             {/* Single Unified WhatsApp Confirmation to Buyer */}
                             {order.customer_phone && (
@@ -3912,16 +4026,36 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       </div>
                     </div>
 
-                    <a
-                      href={selectedOrderForProof.payment_proof_url}
-                      download
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition shadow-md"
-                    >
-                      <Flaticon name="download" className="text-sm" />
-                      <span>Unduh Bukti Pembayaran</span>
-                    </a>
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      {selectedOrderForProof.payment_status !== "settlement" && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleConfirmCash(
+                              selectedOrderForProof.id,
+                              selectedOrderForProof.payment_type === "cod" ||
+                                selectedOrderForProof.payment_type === "cash"
+                                ? "cod"
+                                : "qris"
+                            )
+                          }
+                          className="inline-flex flex-1 min-h-[44px] items-center justify-center gap-2 rounded-lg bg-[#15803D] hover:bg-[#166534] px-4 py-2.5 text-sm font-semibold text-white transition shadow-xs"
+                        >
+                          <Flaticon name="check" className="text-sm" />
+                          <span>Tandai Pembayaran Lunas</span>
+                        </button>
+                      )}
+                      <a
+                        href={selectedOrderForProof.payment_proof_url}
+                        download
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex flex-1 min-h-[44px] items-center justify-center gap-2 rounded-lg border border-[#E6E1D6] bg-white hover:bg-[#FAF8F5] px-4 py-2.5 text-sm font-semibold text-[#1C1917] transition"
+                      >
+                        <Flaticon name="download" className="text-sm text-[#D97706]" />
+                        <span>Unduh Bukti</span>
+                      </a>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-center">

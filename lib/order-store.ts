@@ -301,15 +301,16 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 
   // 4. Check Neon PostgreSQL
   try {
+    await ensureNeonTables();
     const sql = getNeonSql();
-    if (sql && (global as any).__neonReachable !== false) {
+    if (sql) {
       const queryPromise = sql`
         SELECT * FROM orders 
         WHERE id = ${orderId} OR order_number = ${orderId} 
         LIMIT 1
       `;
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Neon read timeout')), 1500)
+        setTimeout(() => reject(new Error('Neon read timeout')), 5000)
       );
       const rows: any = await Promise.race([queryPromise, timeoutPromise]);
       if (rows && rows.length > 0) {
@@ -547,51 +548,8 @@ export async function markWhatsAppConfirmationSent(orderId: string, sentAt: stri
 }
 
 export async function getAllKitchenOrders(): Promise<Order[]> {
-  const result: Order[] = [];
-
-  // Try Firestore
-  try {
-    if (hasFirestoreCredentials()) {
-      const snap = await adminDb!
-        .collection("orders")
-        .where("payment_status", "==", "settlement")
-        .get();
-
-      snap.forEach((doc) => {
-        result.push({ ...doc.data(), id: doc.id } as Order);
-      });
-    }
-  } catch (err) {
-    console.warn("[order-store] Firestore kitchen query error:", err);
-  }
-
-  // Merge disk orders
-  const diskOrders = loadOrdersFromFile();
-  for (const order of diskOrders) {
-    if (order.payment_status === "settlement") {
-      if (!result.some((o) => o.id === order.id)) {
-        result.push(order);
-      }
-    }
-  }
-
-  // Merge in-memory orders
-  for (const order of ordersStore.values()) {
-    if (order.payment_status === "settlement") {
-      if (!result.some((o) => o.id === order.id)) {
-        result.push(order);
-      }
-    }
-  }
-
-  // Sort descending by created_at
-  result.sort((a, b) => {
-    const timeA = new Date(a.created_at || 0).getTime();
-    const timeB = new Date(b.created_at || 0).getTime();
-    return timeB - timeA;
-  });
-
-  return result;
+  const all = await getAllOrdersAdmin();
+  return all.filter((o) => o.payment_status === "settlement");
 }
 
 export async function getAllOrdersAdmin(): Promise<Order[]> {
@@ -610,13 +568,14 @@ export async function getAllOrdersAdmin(): Promise<Order[]> {
     }
   }
 
-  // Try Neon DB asynchronously (only if previous attempts haven't timed out)
+  // Try Neon DB asynchronously
   try {
+    await ensureNeonTables();
     const sql = getNeonSql();
-    if (sql && global.__neonReachable !== false) {
+    if (sql) {
       const neonPromise = sql`SELECT * FROM orders ORDER BY created_at DESC LIMIT 150`;
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Neon query timeout')), 1500)
+        setTimeout(() => reject(new Error('Neon query timeout')), 5000)
       );
       const rows: any = await Promise.race([neonPromise, timeoutPromise]);
       if (Array.isArray(rows)) {
@@ -635,10 +594,7 @@ export async function getAllOrdersAdmin(): Promise<Order[]> {
       }
     }
   } catch (err: any) {
-    // Non-blocking fallback - mark as unreachable if timeout
-    if (err.message && err.message.includes('timeout')) {
-      (global as any).__neonReachable = false;
-    }
+    console.warn("[order-store] Neon admin query fallback:", err?.message);
   }
 
   // Try Firestore

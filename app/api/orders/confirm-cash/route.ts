@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateOrderPayment } from "@/lib/order-store";
+import { getOrderById, updateOrderPayment } from "@/lib/order-store";
 import { notifyPaymentOnWhatsApp } from "@/lib/whatsapp";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { orderId } = body;
+    const { orderId, paymentType } = body;
 
     if (!orderId) {
       return NextResponse.json(
@@ -14,7 +14,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const updated = await updateOrderPayment(orderId, "settlement", "cod", `cash_${Date.now()}`);
+    const existing = await getOrderById(orderId);
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Order not found" },
+        { status: 404 }
+      );
+    }
+
+    // Preserve original payment_type (qris vs cod/cash) unless explicitly overridden
+    const resolvedType = paymentType || existing.payment_type || "cod";
+    const txPrefix = resolvedType === "qris" ? "qris_manual" : "cash";
+    const updated = await updateOrderPayment(
+      orderId,
+      "settlement",
+      resolvedType,
+      `${txPrefix}_${Date.now()}`
+    );
     if (updated) await notifyPaymentOnWhatsApp(updated);
 
     if (!updated) {
@@ -26,7 +42,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Pembayaran tunai berhasil dikonfirmasi!",
+      message:
+        resolvedType === "qris"
+          ? "Pembayaran QRIS berhasil dikonfirmasi lunas!"
+          : "Pembayaran tunai (COD) berhasil dikonfirmasi lunas!",
       order: updated,
     });
   } catch (error: any) {

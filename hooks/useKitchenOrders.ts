@@ -25,6 +25,7 @@ export function useKitchenOrders() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const prevOrderCountRef = useRef<number>(0);
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const isMutatingRef = useRef<boolean>(false);
 
   // Real-time updates via API polling & optional Firestore
   useEffect(() => {
@@ -93,8 +94,10 @@ export function useKitchenOrders() {
     const interval = setInterval(fetchOrdersApi, 2500);
 
     async function fetchOrdersApi() {
+      if (isMutatingRef.current) return;
       try {
-        const res = await fetch("/api/orders/kitchen");
+        const res = await fetch("/api/admin/orders", { cache: "no-store" });
+        if (isMutatingRef.current) return;
         if (res.ok) {
           const data = await res.json();
           if (data.orders) {
@@ -135,20 +138,51 @@ export function useKitchenOrders() {
 
   const updateOrderStatus = useCallback(
     async (orderId: string, nextStatus: OrderStatus) => {
+      isMutatingRef.current = true;
       // Optimistic update
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, order_status: nextStatus } : o))
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                order_status: nextStatus,
+                delivery_status:
+                  nextStatus === "completed"
+                    ? "delivered"
+                    : nextStatus === "ready"
+                    ? "picked_up"
+                    : nextStatus === "cooking"
+                    ? "assigned"
+                    : "pending",
+              }
+            : o
+        )
       );
 
       // Call API PATCH first for instant server synchronization
       try {
-        await fetch(`/api/orders/${orderId}`, {
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ order_status: nextStatus }),
         });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.order) {
+            setOrders((prev) => prev.map((o) => (o.id === orderId ? data.order : o)));
+          }
+        } else {
+          // Re-fetch authoritative state if server rejected
+          const r = await fetch("/api/admin/orders", { cache: "no-store" });
+          if (r.ok) {
+            const d = await r.json();
+            if (Array.isArray(d.orders)) setOrders(d.orders);
+          }
+        }
       } catch (apiErr) {
         console.warn("API PATCH order status warning:", apiErr);
+      } finally {
+        isMutatingRef.current = false;
       }
 
       // Also update Firestore client only if real Firebase is configured
