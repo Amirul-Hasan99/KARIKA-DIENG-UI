@@ -242,6 +242,38 @@ export async function saveOrder(order: Order): Promise<Order> {
   return order;
 }
 
+function mapNeonRowToOrder(row: any): Order {
+  return {
+    id: row.id,
+    order_number: row.order_number,
+    customer_id: row.customer_id,
+    table_id: row.table_id || 'delivery',
+    table_number: row.table_number || 'delivery',
+    customer_name: row.customer_name,
+    customer_phone: row.customer_phone,
+    delivery_address: row.delivery_address,
+    coordinates: typeof row.coordinates === 'string' ? JSON.parse(row.coordinates) : row.coordinates,
+    delivery_distance_km: Number(row.delivery_distance_km || 0),
+    total_amount: Number(row.total_amount || 0),
+    payment_status: row.payment_status as PaymentStatus,
+    order_status: row.order_status as OrderStatus,
+    delivery_status: row.delivery_status,
+    payment_type: row.payment_type,
+    midtrans_transaction_id: row.midtrans_transaction_id,
+    snap_token: row.snap_token,
+    snap_redirect_url: row.snap_redirect_url,
+    payment_proof_url: row.payment_proof_url || undefined,
+    payment_proof_uploaded_at: row.payment_proof_uploaded_at || undefined,
+    courier_id: row.courier_id || undefined,
+    courier_name: row.courier_name || undefined,
+    courier_phone: row.courier_phone || undefined,
+    whatsapp_confirmation_sent_at: row.whatsapp_confirmation_sent_at || undefined,
+    items: typeof row.items === 'string' ? JSON.parse(row.items) : (row.items || []),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
 export async function getOrderById(orderId: string): Promise<Order | null> {
   // 1. Check memory first
   if (ordersStore.has(orderId)) {
@@ -282,30 +314,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
       const rows: any = await Promise.race([queryPromise, timeoutPromise]);
       if (rows && rows.length > 0) {
         (global as any).__neonReachable = true;
-        const row = rows[0];
-        const neonOrder: Order = {
-          id: row.id,
-          order_number: row.order_number,
-          customer_id: row.customer_id,
-          table_id: row.table_id || 'delivery',
-          table_number: row.table_number || 'delivery',
-          customer_name: row.customer_name,
-          customer_phone: row.customer_phone,
-          delivery_address: row.delivery_address,
-          coordinates: typeof row.coordinates === 'string' ? JSON.parse(row.coordinates) : row.coordinates,
-          delivery_distance_km: Number(row.delivery_distance_km || 0),
-          total_amount: Number(row.total_amount || 0),
-          payment_status: row.payment_status as PaymentStatus,
-          order_status: row.order_status as OrderStatus,
-          delivery_status: row.delivery_status,
-          payment_type: row.payment_type,
-          midtrans_transaction_id: row.midtrans_transaction_id,
-          snap_token: row.snap_token,
-          snap_redirect_url: row.snap_redirect_url,
-          items: typeof row.items === 'string' ? JSON.parse(row.items) : (row.items || []),
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-        };
+        const neonOrder = mapNeonRowToOrder(rows[0]);
         ordersStore.set(neonOrder.id, neonOrder);
         persistOrderToDisk(neonOrder);
         return neonOrder;
@@ -614,29 +623,7 @@ export async function getAllOrdersAdmin(): Promise<Order[]> {
         // Mark as reachable
         (global as any).__neonReachable = true;
         for (const row of rows) {
-          const neonOrder: Order = {
-            id: row.id,
-            order_number: row.order_number,
-            customer_id: row.customer_id,
-            table_id: row.table_id || 'delivery',
-            table_number: row.table_number || 'delivery',
-            customer_name: row.customer_name,
-            customer_phone: row.customer_phone,
-            delivery_address: row.delivery_address,
-            coordinates: typeof row.coordinates === 'string' ? JSON.parse(row.coordinates) : row.coordinates,
-            delivery_distance_km: Number(row.delivery_distance_km || 0),
-            total_amount: Number(row.total_amount || 0),
-            payment_status: row.payment_status as PaymentStatus,
-            order_status: row.order_status as OrderStatus,
-            delivery_status: row.delivery_status,
-            payment_type: row.payment_type,
-            midtrans_transaction_id: row.midtrans_transaction_id,
-            snap_token: row.snap_token,
-            snap_redirect_url: row.snap_redirect_url,
-            items: typeof row.items === 'string' ? JSON.parse(row.items) : (row.items || []),
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-          };
+          const neonOrder = mapNeonRowToOrder(row);
           if (!result.some((o) => o.id === neonOrder.id)) {
             result.push(neonOrder);
           } else {
@@ -840,6 +827,7 @@ export async function updateOrderPaymentProof(
 
   // Update in Neon PostgreSQL if available
   try {
+    await ensureNeonTables();
     const sql = getNeonSql();
     if (sql && (global as any).__neonReachable !== false) {
       await sql`

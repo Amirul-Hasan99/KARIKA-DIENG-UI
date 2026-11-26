@@ -106,24 +106,55 @@ export default function OrderTrackingPage() {
     }
   };
 
+  const compressProofImage = (dataUrl: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const maxDim = 1200;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(dataUrl);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
   const handleFileProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Silakan pilih file gambar (JPG, PNG, atau WEBP)");
+      setProofUploadError("Silakan pilih file gambar (JPG, PNG, atau WEBP)");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = async () => {
-      const result = reader.result as string;
-      setPaymentProof(result);
+      const rawDataUrl = reader.result as string;
+      const compressed = await compressProofImage(rawDataUrl);
+      setPaymentProof(compressed);
       try {
-        localStorage.setItem(`karika_proof_${orderId}`, result);
+        localStorage.setItem(`karika_proof_${orderId}`, compressed);
       } catch {}
       // Otomatis kirim ke backend saat file dipilih
-      await uploadProofFile(result);
+      await uploadProofFile(compressed);
     };
     reader.readAsDataURL(file);
   };
@@ -324,8 +355,9 @@ export default function OrderTrackingPage() {
     ? (() => {
         const adminPhone = "6283122046357";
         const isSettled = order.payment_status === "settlement";
+        const isCod = order.payment_type === "cod" || order.payment_type === "cash";
         const paymentLabel =
-          order.payment_type === "cod"
+          isCod
             ? "COD (Bayar Tunai saat Kurir Tiba)"
             : isSettled
             ? "QRIS (SUDAH DIBAYAR / LUNAS)"
@@ -344,8 +376,10 @@ export default function OrderTrackingPage() {
           ? `https://www.google.com/maps/search/?api=1&query=${order.coordinates.lat},${order.coordinates.lng}`
           : "Sesuai titik penginapan Dieng";
 
-        const proofText = paymentProof
-          ? "- Bukti Transfer: SUDAH SAYA LAMPIRKAN DI BAWAH (Foto Struk Terlampir)"
+        const proofText = isCod
+          ? "- Pembayaran: Tunai (COD) disiapkan saat kurir tiba"
+          : paymentProof || order.payment_proof_url
+          ? "- Bukti Transfer: SUDAH TERUNGGAH DI SISTEM (Siap diverifikasi Admin)"
           : "- Bukti Transfer: Siap saya kirimkan ke chat ini";
 
         const msg = `Halo Admin D OLEH - OLEH Dieng, saya ingin konfirmasi pesanan saya:
@@ -996,22 +1030,13 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                       </p>
                     </div>
 
-                    {/* Contact Info */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-amber-100/80 pt-3 text-xs text-[#63625b]">
+                    {/* Contact Info (Clean recipient info without duplicate WA CTA) */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-amber-100/80 pt-3 text-xs text-[#57534E]">
                       <div>
-                        Penerima: <strong className="text-[#24251f] font-bold">{order.customer_name}</strong>
+                        Penerima: <strong className="text-[#1C1917] font-bold">{order.customer_name}</strong>
                         <span className="mx-2">•</span>
-                        WhatsApp: <strong className="text-[#24251f] font-bold">{order.customer_phone}</strong>
+                        WhatsApp: <strong className="font-mono text-[#1C1917] font-bold tabular-nums">{order.customer_phone}</strong>
                       </div>
-                      <a
-                        href={wa}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-xl transition shadow-2xs"
-                      >
-                        <Flaticon name="phone-call" variant="sr" className="text-xs text-emerald-600" />
-                        <span>Hubungi Admin via WhatsApp</span>
-                      </a>
                     </div>
                   </div>
                 </div>
@@ -1049,8 +1074,27 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                   </div>
                 </div>
 
-                {/* FORM UPLOAD BUKTI STRUK TRANSFER / PEMBAYARAN PEMBELI */}
-                <div className="rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-br from-[#fdfbf3] via-amber-50/40 to-white p-4 sm:p-5 text-left space-y-3.5 shadow-xs">
+                {/* COD CONFIRMATION NOTICE OR QRIS UPLOAD FORM */}
+                {order.payment_status !== "failed" && (order.payment_type === "cod" || order.payment_type === "cash") ? (
+                  <div className="rounded-xl border border-[#E6E1D6] bg-[#FAF8F5] p-4 flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
+                      <Flaticon name="wallet" variant="sr" className="text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-[#1C1917] uppercase tracking-wider">
+                        Pembayaran Tunai (COD)
+                      </p>
+                      <p className="text-xs text-[#57534E] leading-relaxed">
+                        Siapkan uang pas sebesar{" "}
+                        <strong className="font-mono font-bold text-[#1C1917] tabular-nums">
+                          Rp{order.total_amount.toLocaleString("id-ID")}
+                        </strong>{" "}
+                        saat kurir tiba di lokasi pengantaran. Tidak perlu mengunggah bukti transfer.
+                      </p>
+                    </div>
+                  </div>
+                ) : order.payment_status !== "failed" ? (
+                  <div className="rounded-xl border-2 border-dashed border-amber-300 bg-[#FFFDF8] p-4 sm:p-5 text-left space-y-3.5">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 pb-2.5">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#292a23] to-[#454639] text-[#E25C00] shadow-2xs">
@@ -1174,11 +1218,12 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                     </div>
                   )}
                 </div>
+                ) : null}
 
-                {/* WhatsApp Confirmation */}
+                {/* Single Unified WhatsApp Confirmation CTA */}
                 <div className="pt-2">
                   {proofUploadError && (
-                    <div className="mb-3 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-800 flex items-start gap-2">
+                    <div className="mb-3 rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs text-rose-800 flex items-start gap-2">
                       <Flaticon name="exclamation" className="text-sm shrink-0 mt-0.5" />
                       <span>{proofUploadError}</span>
                     </div>
@@ -1186,18 +1231,20 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                   <button
                     onClick={handleConfirmPayment}
                     disabled={isUploadingProof}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#168a54] px-5 py-4 text-sm font-bold text-white hover:bg-[#137446] transition shadow-md shadow-emerald-700/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-lg bg-[#15803D] px-5 py-3.5 text-sm font-semibold text-white hover:bg-[#166534] active:scale-[0.99] transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isUploadingProof ? (
                       <>
                         <Flaticon name="spinner" className="animate-spin text-base" />
-                        <span>Mengunggah & Mengirim...</span>
+                        <span>Mengunggah &amp; Mengirim...</span>
                       </>
                     ) : (
                       <>
                         <Flaticon name="whatsapp" variant="brands" className="text-base" />
                         <span>
-                          {paymentProof
+                          {order.payment_type === "cod" || order.payment_type === "cash"
+                            ? "Hubungi Admin via WhatsApp (0831-2204-6357)"
+                            : order.payment_proof_url || paymentProof
                             ? "Konfirmasi Pembayaran & Kirim Bukti ke Admin WhatsApp (0831-2204-6357)"
                             : "Konfirmasi Pembayaran ke Admin WhatsApp (0831-2204-6357)"}
                         </span>

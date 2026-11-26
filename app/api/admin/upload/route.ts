@@ -53,6 +53,19 @@ export async function POST(req: Request) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
+      // On Vercel/production, filesystem is ephemeral; return inline Data URL so images persist in Neon DB.
+      if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+        const mimeType = file.type || "image/png";
+        const dataUrl = `data:${mimeType};base64,${buffer.toString("base64")}`;
+        return NextResponse.json({
+          success: true,
+          url: dataUrl,
+          fileName: file.name,
+          size: file.size,
+          message: "Gambar berhasil diproses untuk penyimpanan cloud",
+        });
+      }
+
       // Tentukan ekstensi
       const extMatch = file.name.match(/\.(jpg|jpeg|png|webp)$/i);
       const ext = extMatch ? extMatch[1].toLowerCase() : file.type.split("/")[1] || "jpg";
@@ -104,6 +117,16 @@ export async function POST(req: Request) {
 
       if (buffer.length > MAX_FILE_SIZE) {
         return NextResponse.json({ success: false, error: "Ukuran gambar melebihi batas 5 MB" }, { status: 400 });
+      }
+
+      if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+        return NextResponse.json({
+          success: true,
+          url: imageBase64,
+          fileName: `studio_${Date.now()}.${ext}`,
+          size: buffer.length,
+          message: "Gambar berhasil diproses untuk penyimpanan cloud",
+        });
       }
 
       const cleanFolder = String(folder).replace(/[^a-zA-Z0-9_-]/g, "");

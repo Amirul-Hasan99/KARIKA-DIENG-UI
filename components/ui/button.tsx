@@ -10,8 +10,20 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
   { className, variant = "default", size = "default", ...props }, ref
 ) {
   return <button ref={ref} className={cn(
-    "inline-flex items-center justify-center whitespace-nowrap rounded-none text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007bff] disabled:pointer-events-none disabled:opacity-50",
-    { default: "bg-[#007bff] text-white hover:bg-[#0056b3]", secondary: "bg-[#f0f0f0] text-[#292929] hover:bg-[#e0e0e0]", outline: "border border-[#dcdcdc] bg-white hover:bg-[#f8f8f8]", ghost: "hover:bg-black/5", destructive: "bg-red-600 text-white hover:bg-red-700" }[variant],
-    { default: "h-11 px-5", sm: "h-9 rounded-none px-3", lg: "h-12 px-7 text-base", icon: "h-10 w-10" }[size], className
+    "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D97706] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+    {
+      default: "bg-[#D97706] text-white hover:bg-[#B45309] shadow-2xs",
+      secondary: "bg-[#1C1917] text-white hover:bg-black shadow-2xs",
+      outline: "border border-[#E6E1D6] bg-white text-[#1C1917] hover:bg-[#FAF8F5]",
+      ghost: "text-[#57534E] hover:bg-stone-100 hover:text-[#1C1917]",
+      destructive: "bg-[#B91C1C] text-white hover:bg-[#991B1B]",
+    }[variant],
+    {
+      default: "min-h-[42px] px-4 py-2",
+      sm: "min-h-[36px] rounded-lg px-3 text-xs",
+      lg: "min-h-[48px] rounded-lg px-6 text-sm sm:text-base",
+      icon: "h-10 w-10 rounded-lg",
+    }[size],
+    className
   )} {...props} />;
 });

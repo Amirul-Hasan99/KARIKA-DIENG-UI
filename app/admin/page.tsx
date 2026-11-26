@@ -13,6 +13,11 @@ import Flaticon from "@/components/ui/Flaticon";
 import { KarikaProduct, INITIAL_KARIKA_PRODUCTS, KARIKA_CATEGORIES } from "@/lib/karika-products-data";
 import { Courier } from "@/types";
 import { DEFAULT_COURIERS } from "@/lib/couriers";
+import {
+  removeProductBackground,
+  renderStudioProductImage,
+  StudioOutputMode,
+} from "@/lib/product-studio";
 
 export default function AdminDashboardPage() {
   const {
@@ -54,11 +59,18 @@ export default function AdminDashboardPage() {
     phone: "",
   });
 
-  // Product modal & CRUD form state with Device Image Upload
+  // Product modal & CRUD form state with Auto-Studio Image Processing
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<KarikaProduct | null>(null);
   const [selectedProductFile, setSelectedProductFile] = useState<File | null>(null);
   const [productFilePreview, setProductFilePreview] = useState<string>("");
+  const [studioCutoutDataUrl, setStudioCutoutDataUrl] = useState<string>("");
+  const [studioMode, setStudioMode] = useState<StudioOutputMode>("template");
+  const [studioProgress, setStudioProgress] = useState<{ active: boolean; stage: string; pct: number }>({
+    active: false,
+    stage: "",
+    pct: 0,
+  });
   const [isUploadingProductFile, setIsUploadingProductFile] = useState(false);
   const [productUploadError, setProductUploadError] = useState<string>("");
   const [productForm, setProductForm] = useState({
@@ -702,11 +714,14 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
     }
   };
 
-  // Product CRUD Form Handlers with Device Image Upload
+  // Product CRUD Form Handlers with Auto-Studio Device Image Upload
   const handleOpenAddProduct = () => {
     setEditingProduct(null);
     setSelectedProductFile(null);
     setProductFilePreview("");
+    setStudioCutoutDataUrl("");
+    setStudioMode("template");
+    setStudioProgress({ active: false, stage: "", pct: 0 });
     setProductUploadError("");
     setProductForm({
       name: "",
@@ -725,6 +740,9 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
     setEditingProduct(prod);
     setSelectedProductFile(null);
     setProductFilePreview(prod.image || "");
+    setStudioCutoutDataUrl("");
+    setStudioMode("template");
+    setStudioProgress({ active: false, stage: "", pct: 0 });
     setProductUploadError("");
     setProductForm({
       name: prod.name,
@@ -739,7 +757,26 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
     setIsAddProductOpen(true);
   };
 
-  const handleProductFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const applyStudioMode = async (
+    mode: StudioOutputMode,
+    cutoutUrl: string = studioCutoutDataUrl,
+    packText: string = productForm.pack
+  ) => {
+    setStudioMode(mode);
+    if (!cutoutUrl) return;
+    try {
+      const rendered = await renderStudioProductImage(cutoutUrl, {
+        mode,
+        packBadge: packText,
+      });
+      setSelectedProductFile(rendered.file);
+      setProductFilePreview(rendered.dataUrl);
+    } catch (err: any) {
+      setProductUploadError(err?.message || "Gagal merender template gambar.");
+    }
+  };
+
+  const handleProductFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -759,6 +796,26 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
 
     setSelectedProductFile(file);
     setProductFilePreview(URL.createObjectURL(file));
+
+    // Auto-Studio: Hapus background otomatis via WASM/ONNX lalu terapkan mode pilihan
+    setStudioProgress({ active: true, stage: "Menyiapkan Auto-Studio AI...", pct: 10 });
+    try {
+      const cutout = await removeProductBackground(file, (stage, pct) => {
+        setStudioProgress({ active: true, stage, pct });
+      });
+      setStudioCutoutDataUrl(cutout);
+      const rendered = await renderStudioProductImage(cutout, {
+        mode: studioMode,
+        packBadge: productForm.pack,
+      });
+      setSelectedProductFile(rendered.file);
+      setProductFilePreview(rendered.dataUrl);
+    } catch (err: any) {
+      console.warn("[Auto-Studio] Background removal fallback to original image:", err);
+      setProductUploadError("Auto-hapus background tidak tersedia di perangkat ini; menggunakan foto asli.");
+    } finally {
+      setStudioProgress({ active: false, stage: "", pct: 0 });
+    }
   };
 
   const handleSubmitProductForm = async (e: React.FormEvent) => {
@@ -1908,45 +1965,44 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                               </a>
                             )}
 
-                            {/* Tombol Bukti Pembayaran Struk Pembeli */}
-                            {order.payment_proof_url && (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedOrderForProof(order)}
-                                className="w-full flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border-2 border-emerald-400 text-emerald-900 py-2 px-3 text-xs font-bold transition shadow-2xs group"
-                                title="Buka Foto Bukti Pembayaran / Struk Transfer Pembeli"
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                                    <Flaticon name="picture" className="text-xs" />
+                            {/* Unified QRIS Receipt Action Slot (Consistent across all QRIS orders) */}
+                            {!(order.payment_type === "cod" || order.payment_type === "cash") && (
+                              order.payment_proof_url ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrderForProof(order)}
+                                  className="w-full min-h-[42px] flex items-center justify-between gap-2 rounded-lg bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#15803D]/40 text-[#15803D] py-2 px-3 text-xs font-semibold transition active:scale-[0.99]"
+                                  title="Buka Foto Bukti Pembayaran / Struk Transfer Pembeli"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Flaticon name="picture" className="text-xs shrink-0" />
+                                    <span className="truncate">Lihat Bukti Transfer Pembeli</span>
                                   </div>
-                                  <span className="truncate">Bukti Struk Transfer Pembeli</span>
+                                  <span className="rounded bg-[#15803D] text-white px-2 py-0.5 text-[10px] font-bold shrink-0">
+                                    Buka ↗
+                                  </span>
+                                </button>
+                              ) : (
+                                <div className="w-full min-h-[42px] flex items-center justify-between gap-2 rounded-lg border border-dashed border-[#E6E1D6] bg-[#FAF8F5] text-[#57534E] py-2 px-3 text-xs font-medium">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Flaticon name="clock" className="text-xs text-[#D97706] shrink-0" />
+                                    <span className="truncate">Menunggu Bukti Transfer Pembeli</span>
+                                  </div>
+                                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#57534E] shrink-0">
+                                    QRIS
+                                  </span>
                                 </div>
-                                <span className="rounded-lg bg-emerald-600 group-hover:bg-emerald-700 text-white px-2.5 py-0.5 text-[10px] font-black shrink-0 transition">
-                                  Buka Foto ↗
-                                </span>
-                              </button>
+                              )
                             )}
 
                             <div className="flex items-center gap-1.5 pt-0.5">
                               <button
                                 onClick={() => setSelectedOrderDetail(order)}
-                                className="flex items-center justify-center gap-1 rounded-xl border border-amber-300 bg-amber-50 p-2 text-xs font-bold text-amber-900 hover:bg-amber-100 transition"
+                                className="flex-1 min-h-[38px] flex items-center justify-center gap-1 rounded-lg border border-[#E6E1D6] bg-white px-3 py-1.5 text-xs font-semibold text-[#1C1917] hover:bg-[#FAF8F5] transition"
                                 title="Buka Pop Up Modal Rincian Lengkap"
                               >
                                 <span>Detail</span>
                               </button>
-
-                              {order.payment_proof_url && (
-                                <button
-                                  onClick={() => setSelectedOrderForProof(order)}
-                                  className="flex items-center justify-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 p-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition"
-                                  title="Lihat Bukti Pembayaran"
-                                >
-                                  <Flaticon name="image" className="text-xs" />
-                                  <span>Bukti</span>
-                                </button>
-                              )}
 
                               <button
                                 onClick={() => printReceiptViaBrowser(order)}
@@ -2278,16 +2334,22 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                   ? "Dibatalkan"
                                   : "Pending"}
                               </span>
-                              {order.payment_proof_url && (
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedOrderForProof(order)}
-                                  className="flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded px-1.5 py-0.5 transition cursor-pointer"
-                                  title="Lihat foto bukti struk pembayaran pembeli"
-                                >
-                                  <Flaticon name="picture" className="text-[10px] text-emerald-600" />
-                                  <span>Lihat Bukti ↗</span>
-                                </button>
+                              {!(order.payment_type === "cod" || order.payment_type === "cash") && (
+                                order.payment_proof_url ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedOrderForProof(order)}
+                                    className="flex items-center gap-1 text-[10px] font-bold text-[#15803D] bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#15803D]/40 rounded px-1.5 py-0.5 transition cursor-pointer"
+                                    title="Lihat foto bukti struk pembayaran pembeli"
+                                  >
+                                    <Flaticon name="picture" className="text-[10px]" />
+                                    <span>Lihat Bukti Transfer ↗</span>
+                                  </button>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#57534E] bg-[#FAF8F5] border border-[#E6E1D6] rounded px-1.5 py-0.5">
+                                    Menunggu Bukti
+                                  </span>
+                                )
                               )}
                             </div>
                           </td>
@@ -3634,36 +3696,49 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                   </div>
                 </div>
 
-                {/* Field 4: Foto Produk (Upload dari Perangkat & Preview) */}
-                <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
-                  <div className="flex items-center justify-between">
-                    <label className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
-                      Foto Produk (Dari HP / Laptop) <span className="text-rose-500">*</span>
+                {/* Field 4: Foto Produk (Auto-Studio AI Background Removal + Template Katalog) */}
+                <div className="space-y-3 rounded-xl border border-[#E6E1D6] bg-[#FAF8F5] p-3.5 sm:p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="font-bold text-[#1C1917] uppercase tracking-wider text-[11px]">
+                      Auto-Studio Foto Produk <span className="text-[#B91C1C]">*</span>
                     </label>
-                    <span className="text-[10px] text-slate-400">JPG, PNG, WebP (Maks. 5MB)</span>
+                    <span className="text-[10px] font-medium text-[#57534E]">
+                      Otomatis Hapus Background • JPG, PNG, WebP
+                    </span>
                   </div>
 
                   {/* Area Pilih File & Preview */}
                   <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <div className="h-20 w-20 shrink-0 rounded-2xl overflow-hidden border border-slate-200 bg-white p-1 flex items-center justify-center shadow-xs">
+                    <div
+                      className="h-24 w-24 shrink-0 rounded-xl overflow-hidden border border-[#E6E1D6] p-1 flex items-center justify-center shadow-2xs"
+                      style={{
+                        backgroundImage:
+                          studioCutoutDataUrl && studioMode === "transparent"
+                            ? "linear-gradient(45deg, #e7e5e4 25%, transparent 25%), linear-gradient(-45deg, #e7e5e4 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e7e5e4 75%), linear-gradient(-45deg, transparent 75%, #e7e5e4 75%)"
+                            : undefined,
+                        backgroundSize: "12px 12px",
+                        backgroundPosition: "0 0, 0 6px, 6px -6px, -6px 0",
+                        backgroundColor: "#FFFFFF",
+                      }}
+                    >
                       {productFilePreview || productForm.image ? (
                         <img
                           src={productFilePreview || productForm.image}
                           alt="Preview Produk"
-                          className="h-full w-full object-cover rounded-xl"
+                          className="h-full w-full object-contain rounded-lg"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = "none";
                           }}
                         />
                       ) : (
-                        <div className="flex flex-col items-center justify-center text-slate-300">
+                        <div className="flex flex-col items-center justify-center text-stone-300">
                           <Flaticon name="image" className="text-xl" />
                           <span className="text-[9px] mt-0.5">Belum ada</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="space-y-1.5 flex-1 min-w-0 text-center sm:text-left">
+                    <div className="space-y-2 flex-1 min-w-0 text-center sm:text-left">
                       <input
                         type="file"
                         id="product-file-input"
@@ -3674,10 +3749,10 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                       <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
                         <label
                           htmlFor="product-file-input"
-                          className="cursor-pointer bg-[#292a23] hover:bg-black text-[#E25C00] font-bold px-3 py-1.5 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-xs"
+                          className="cursor-pointer min-h-[38px] bg-[#1C1917] hover:bg-black text-white font-semibold px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1.5 transition shadow-2xs"
                         >
-                          <Flaticon name="upload" className="text-xs" />
-                          <span>Pilih Foto dari Galeri / File</span>
+                          <Flaticon name="upload" className="text-xs text-[#D97706]" />
+                          <span>Pilih Foto (Auto Transparan)</span>
                         </label>
 
                         {selectedProductFile && (
@@ -3686,23 +3761,66 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                             onClick={() => {
                               setSelectedProductFile(null);
                               setProductFilePreview("");
+                              setStudioCutoutDataUrl("");
                               setProductUploadError("");
                             }}
-                            className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-2.5 py-1.5 rounded-xl text-xs transition"
+                            className="min-h-[38px] border border-[#E6E1D6] bg-white hover:bg-stone-100 text-[#57534E] font-semibold px-2.5 py-1.5 rounded-lg text-xs transition"
                           >
-                            Batal Foto Baru
+                            Reset
                           </button>
                         )}
                       </div>
 
-                      {selectedProductFile && (
-                        <p className="text-[11px] font-mono text-emerald-700 truncate">
-                          File dipilih: {selectedProductFile.name} ({(selectedProductFile.size / 1024).toFixed(0)} KB)
+                      {studioProgress.active && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-[#B45309]">
+                            <span>{studioProgress.stage}</span>
+                            <span className="font-mono tabular-nums">{studioProgress.pct}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-stone-200 overflow-hidden">
+                            <div
+                              className="h-full bg-[#D97706] transition-all duration-300"
+                              style={{ width: `${studioProgress.pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {studioCutoutDataUrl && !studioProgress.active && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5 justify-center sm:justify-start">
+                          <button
+                            type="button"
+                            onClick={() => void applyStudioMode("transparent")}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${
+                              studioMode === "transparent"
+                                ? "bg-[#1C1917] text-white border-[#1C1917]"
+                                : "bg-white text-[#57534E] border-[#E6E1D6] hover:bg-stone-50"
+                            }`}
+                          >
+                            Transparan Murni (PNG)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void applyStudioMode("template")}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${
+                              studioMode === "template"
+                                ? "bg-[#D97706] text-white border-[#D97706]"
+                                : "bg-white text-[#57534E] border-[#E6E1D6] hover:bg-stone-50"
+                            }`}
+                          >
+                            Template Katalog D&apos;Oleh-Oleh
+                          </button>
+                        </div>
+                      )}
+
+                      {selectedProductFile && !studioProgress.active && (
+                        <p className="text-[11px] font-mono text-[#15803D] truncate tabular-nums">
+                          Siap upload: {selectedProductFile.name} ({(selectedProductFile.size / 1024).toFixed(0)} KB)
                         </p>
                       )}
 
                       {productUploadError && (
-                        <p className="text-[11px] text-rose-600 font-bold">
+                        <p className="text-[11px] text-[#B91C1C] font-semibold">
                           {productUploadError}
                         </p>
                       )}

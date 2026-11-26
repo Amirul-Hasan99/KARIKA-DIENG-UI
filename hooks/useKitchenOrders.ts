@@ -83,7 +83,13 @@ export function useKitchenOrders() {
       }
     }
 
-    // Polling interval every 2.5 seconds for instant real-time synchronization
+    // Polling interval every 2.5 seconds + tab focus / visibility sync
+    const onFocus = () => void fetchOrdersApi();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void fetchOrdersApi();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
     const interval = setInterval(fetchOrdersApi, 2500);
 
     async function fetchOrdersApi() {
@@ -122,6 +128,8 @@ export function useKitchenOrders() {
     return () => {
       unsubscribe();
       clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [soundEnabled]);
 

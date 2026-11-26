@@ -41,38 +41,34 @@ export async function POST(req: Request) {
 
     let finalProofUrl = paymentProof;
 
-    // Coba simpan file ke filesystem jika memungkinkan
-    try {
-      const uploadsDir = path.join(process.cwd(), "public", "uploads", "payment-proof");
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
+    // On serverless/production (Vercel), disk writes are ephemeral; always persist Data URL directly in Neon DB.
+    // Locally, we can optionally mirror to disk, while still returning Data URL if under 2.5MB.
+    if (process.env.NODE_ENV !== "production" && !process.env.VERCEL && paymentProof.length >= 2500000) {
+      try {
+        const uploadsDir = path.join(process.cwd(), "public", "uploads", "payment-proof");
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
 
-      const base64Data = paymentProof.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, "base64");
+        const base64Data = paymentProof.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
 
-      const ext = paymentProof.includes("png")
-        ? "png"
-        : paymentProof.includes("webp")
-        ? "webp"
-        : "jpg";
+        const ext = paymentProof.includes("png")
+          ? "png"
+          : paymentProof.includes("webp")
+          ? "webp"
+          : "jpg";
 
-      const safeId = String(order.order_number || orderId).replace(/[^a-zA-Z0-9_-]/g, "_");
-      const fileName = `${safeId}-${Date.now()}.${ext}`;
-      const filePath = path.join(uploadsDir, fileName);
+        const safeId = String(order.order_number || orderId).replace(/[^a-zA-Z0-9_-]/g, "_");
+        const fileName = `${safeId}-${Date.now()}.${ext}`;
+        const filePath = path.join(uploadsDir, fileName);
 
-      fs.writeFileSync(filePath, buffer);
-      
-      // Jika ukuran base64 di bawah 1MB, simpan Data URL langsung agar tahan banting di Vercel Serverless
-      // Jika di atas 1MB, gunakan path file /uploads/payment-proof/
-      if (paymentProof.length < 1200000) {
-        finalProofUrl = paymentProof;
-      } else {
+        fs.writeFileSync(filePath, buffer);
         finalProofUrl = `/uploads/payment-proof/${fileName}`;
+      } catch (fsErr) {
+        console.warn("[upload-payment-proof] Disk write warning (falling back to Data URL):", fsErr);
+        finalProofUrl = paymentProof;
       }
-    } catch (fsErr) {
-      console.warn("[upload-payment-proof] Disk write warning (falling back to Data URL):", fsErr);
-      finalProofUrl = paymentProof;
     }
 
     const updated = await updateOrderPaymentProof(order.id, finalProofUrl);

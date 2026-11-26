@@ -177,9 +177,9 @@ export default function HomePage() {
     setActiveOrder(null);
   };
   return (
-    <div className="min-h-screen bg-[#f8f7f2] text-[#24251f] selection:bg-[#E25C00] selection:text-white">
+    <div className="min-h-screen bg-[#F7F5F0] text-[#1C1917] selection:bg-[#D97706] selection:text-white">
       {/* Main Header / Navigation */}
-      <header className="sticky top-0 z-30 border-b border-[#e7e4d8] bg-[#f8f7f2]/90 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-[#E6E1D6] bg-[#F7F5F0]/95 backdrop-blur-md">
         <nav className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-10">
           <div className="flex items-center gap-3">
             <Link
@@ -476,7 +476,7 @@ export default function HomePage() {
                     <span className="text-[8px] sm:text-[10px] font-bold text-[#E25C00] uppercase tracking-wider block">
                       Harga
                     </span>
-                    <span className="text-xs sm:text-base lg:text-lg font-black text-[#24251f]">
+                    <span className="font-mono text-xs sm:text-base lg:text-lg font-extrabold text-[#1C1917] tabular-nums">
                       Rp{p.price.toLocaleString("id-ID")}
                     </span>
                   </div>

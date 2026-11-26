@@ -530,7 +530,7 @@ export default function CatalogPage() {
                       {p.description}
                     </p>
                     <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between border-t border-[#efeee9] pt-1.5 sm:pt-4 pb-0.5 sm:pb-1">
-                      <p className="text-xs sm:text-base lg:text-lg font-black text-[#24251f] whitespace-nowrap">
+                      <p className="font-mono text-xs sm:text-base lg:text-lg font-extrabold text-[#1C1917] whitespace-nowrap tabular-nums">
                         {rupiah(p.price)}
                       </p>
                       <span className="hidden xs:inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-bold text-[#E25C00] shrink-0">
