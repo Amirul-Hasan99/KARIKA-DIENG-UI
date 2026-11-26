@@ -542,54 +542,6 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                   </>
                 )}
 
-                {/* Status Badges */}
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-[#f8f7f2] p-4 border border-[#e9e7df]">
-                    <p className="text-xs font-medium text-[#77766f]">Status Pembayaran</p>
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <span
-                        className={`inline-block h-2.5 w-2.5 rounded-full ${
-                          order.payment_status === "settlement"
-                            ? "bg-emerald-500"
-                            : "bg-amber-500 animate-ping"
-                        }`}
-                      />
-                      <span className="font-bold text-sm">
-                        {paymentLabels[order.payment_status] || order.payment_status}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-[#77766f]">
-                      {order.payment_type === "cod"
-                        ? "Tunai saat pesanan diterima oleh kurir"
-                        : order.payment_status === "settlement"
-                        ? "Pembayaran telah terverifikasi lunas"
-                        : "QRIS · Pindai barcode untuk membayar"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-[#f8f7f2] p-4 border border-[#e9e7df]">
-                    <p className="text-xs font-medium text-[#77766f]">Status Pengantaran</p>
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <span className="text-base">🛵</span>
-                      <span className="font-black text-sm text-[#24251f]">
-                        {(() => {
-                          const status = order.delivery_status || "pending";
-                          if (status === "delivered" || order.order_status === "completed") {
-                            return "Selesai Mengirim";
-                          }
-                          if (status === "picked_up" || order.order_status === "ready") {
-                            return "Sedang Mengirim";
-                          }
-                          return "Belum Dikirim";
-                        })()}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-[#77766f]">
-                      Radius {order.delivery_distance_km ?? "–"} km dari Titik 0 Dieng
-                    </p>
-                  </div>
-                </div>
-
                 {/* Card Informasi Kurir Pengantar (Jika Telah Ditugaskan Admin) */}
                 {order.courier_name && (
                   <div className="mt-4 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50/80 via-white to-sky-50/50 p-4 shadow-xs">
@@ -622,7 +574,29 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                       {order.courier_phone && (
                         <a
                           href={`https://wa.me/${order.courier_phone.replace(/\D/g, "").replace(/^0/, "62")}?text=${encodeURIComponent(
-                            `Halo Mas ${order.courier_name}, saya ${order.customer_name || "pembeli"} (Pesanan #${order.order_number}). Mau konfirmasi pengantaran oleh-oleh ke alamat saya.`
+                            (() => {
+                              const itemsText = order.items
+                                .map((i) => `- ${i.name} (${i.qty} paket)`)
+                                .join("\n");
+                              const mapsText = order.coordinates
+                                ? `https://www.google.com/maps/search/?api=1&query=${order.coordinates.lat},${order.coordinates.lng}`
+                                : "-";
+                              const methodText =
+                                order.payment_type === "cod" || order.payment_type === "cash"
+                                  ? "COD (Bayar Tunai saat Kurir Tiba)"
+                                  : "QRIS";
+                              return `Halo Mas ${order.courier_name}, saya ${order.customer_name || "pembeli"} (Pesanan #${order.order_number}). Mau konfirmasi pengantaran oleh-oleh ke alamat saya.
+
+*LIST PESANAN:*
+${itemsText}
+Total: Rp${order.total_amount.toLocaleString("id-ID")} (${methodText})
+
+*PATOKAN & LOKASI PENGANTARAN:*
+- Alamat/Patokan: ${order.delivery_address || "-"}
+- Titik Google Maps: ${mapsText}
+
+Terima kasih Mas ${order.courier_name}!`;
+                            })()
                           )}`}
                           target="_blank"
                           rel="noreferrer"
@@ -755,6 +729,25 @@ Mohon segera di-ACC dan diproses kurir pengantarannya ya Admin. Terima kasih ban
                               : "📦 Toko D OLEH - OLEH Dieng sedang menyiapkan dan mengemas paket pesanan Anda."}
                           </p>
                         </div>
+
+                        {currentStage === 3 && (
+                          <div className="mt-3.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                try {
+                                  localStorage.removeItem("karika_active_order");
+                                  localStorage.removeItem(`karika_proof_${orderId}`);
+                                } catch {}
+                                window.location.href = "/";
+                              }}
+                              className="inline-flex w-full min-h-[42px] items-center justify-center gap-2 rounded-lg bg-[#15803D] hover:bg-[#166534] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white transition shadow-xs active:scale-[0.99] cursor-pointer"
+                            >
+                              <Flaticon name="check" className="text-xs" />
+                              <span>Selesai Pesanan</span>
+                            </button>
+                          </div>
+                        )}
                       </>
                     );
                   })()}

@@ -356,20 +356,6 @@ export default function CatalogPage() {
                   <span className="font-mono text-xs font-bold text-slate-800">
                     {activeOrder.orderNumber}
                   </span>
-                  <span
-                    className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
-                      deliveryStatusText[activeOrder.deliveryStatus || "pending"]?.color ||
-                      "bg-slate-100 text-slate-800 border-slate-200"
-                    }`}
-                  >
-                    {deliveryStatusText[activeOrder.deliveryStatus || "pending"]?.label ||
-                      activeOrder.deliveryStatus}
-                  </span>
-                  {activeOrder.paymentStatus !== "settlement" && (
-                    <span className="rounded-full bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                      Belum Lunas
-                    </span>
-                  )}
                 </div>
                 <p className="text-xs text-[#6a685e]">
                   Pesanan a.n. <strong>{activeOrder.customerName || "Pembeli"}</strong> sedang dipantau langsung dari toko Dieng.
