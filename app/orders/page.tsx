@@ -356,7 +356,7 @@ function OrdersContent() {
                           {formatRupiah(ord.total_amount)}
                         </span>
                         <span className="text-[11px] text-[#78776f]">
-                          Metode: {ord.payment_type === "cash" ? "Bayar Tunai (COD)" : "QRIS"}
+                          Metode: {ord.payment_type === "cod" || ord.payment_type === "cash" ? "Bayar Tunai (COD)" : "QRIS"}
                         </span>
                       </div>
                     </div>

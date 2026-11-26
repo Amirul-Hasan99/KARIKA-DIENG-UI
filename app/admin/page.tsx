@@ -1822,10 +1822,10 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                     href={`https://wa.me/${order.customer_phone.replace(/\D/g, "").replace(/^0/, "62")}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="font-bold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1 hover:underline"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#15803D] hover:bg-[#166534] text-white px-2.5 py-1.5 text-[11px] font-semibold transition shadow-2xs"
                                   >
+                                    <Flaticon name="whatsapp" variant="brands" className="text-xs" />
                                     <span>Chat WA Pembeli</span>
-                                    <Flaticon name="share" className="text-[10px]" />
                                   </a>
                                 )}
                               </div>
@@ -1973,7 +1973,7 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                                         href={`https://wa.me/${activeCourier.phone.replace(/\D/g, "").replace(/^0/, "62")}`}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="text-emerald-700 hover:text-emerald-800 font-bold inline-flex items-center gap-1 shrink-0 hover:underline"
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-[#15803D] hover:bg-[#166534] text-white px-2.5 py-1 text-[11px] font-semibold transition shadow-2xs shrink-0"
                                         title="Chat Kurir via WhatsApp"
                                       >
                                         <Flaticon name="whatsapp" variant="brands" className="text-xs" />
@@ -3467,86 +3467,6 @@ Jika ada petunjuk arah atau patokan tambahan, silakan balas chat ini ya Kak. Sel
                         )}
                       </div>
 
-                      {/* 3 Status Pengantaran Terintegrasi */}
-                      <div className="pt-2 border-t border-sky-200/80 space-y-2">
-                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                          <span>Status Pengantaran:</span>
-                          <span
-                            className={`font-black text-xs ${
-                              currentDelivery === "delivered"
-                                ? "text-emerald-700"
-                                : currentDelivery === "picked_up"
-                                ? "text-sky-700"
-                                : "text-amber-700"
-                            }`}
-                          >
-                            {currentDelivery === "delivered"
-                              ? "✓ Selesai Mengirim (Tiba)"
-                              : currentDelivery === "picked_up"
-                              ? "🛵 Sedang Mengirim (Kurir OTW)"
-                              : "⏳ Belum Dikirim (Disiapkan)"}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              await handleUpdateDeliveryStatus(selectedOrderDetail.id, "pending");
-                              setSelectedOrderDetail({
-                                ...selectedOrderDetail,
-                                delivery_status: "pending",
-                              });
-                            }}
-                            className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all text-center flex flex-col items-center justify-center ${
-                              currentDelivery === "pending"
-                                ? "bg-amber-500 text-white shadow-xs ring-2 ring-amber-300"
-                                : "bg-white text-slate-700 hover:bg-amber-50 hover:text-amber-900 border border-slate-200"
-                            }`}
-                          >
-                            <span>Belum Dikirim</span>
-                            <span className="text-[10px] opacity-80 font-normal">Disiapkan</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              await handleUpdateDeliveryStatus(selectedOrderDetail.id, "picked_up");
-                              setSelectedOrderDetail({
-                                ...selectedOrderDetail,
-                                delivery_status: "picked_up",
-                              });
-                            }}
-                            className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all text-center flex flex-col items-center justify-center ${
-                              currentDelivery === "picked_up"
-                                ? "bg-sky-600 text-white shadow-xs ring-2 ring-sky-300"
-                                : "bg-white text-slate-700 hover:bg-sky-50 hover:text-sky-900 border border-slate-200"
-                            }`}
-                          >
-                            <span>Sedang Mengirim</span>
-                            <span className="text-[10px] opacity-80 font-normal">Kurir OTW</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              await handleUpdateDeliveryStatus(selectedOrderDetail.id, "delivered");
-                              setSelectedOrderDetail({
-                                ...selectedOrderDetail,
-                                delivery_status: "delivered",
-                              });
-                            }}
-                            className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all text-center flex flex-col items-center justify-center ${
-                              currentDelivery === "delivered"
-                                ? "bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-300"
-                                : "bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200"
-                            }`}
-                          >
-                            <span>Selesai Mengirim</span>
-                            <span className="text-[10px] opacity-80 font-normal">Sudah Sampai</span>
-                          </button>
-                        </div>
-                      </div>
                     </div>
                   );
                 })()}

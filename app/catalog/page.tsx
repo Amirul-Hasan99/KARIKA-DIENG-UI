@@ -740,7 +740,9 @@ export default function CatalogPage() {
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[#727168]">Metode Pembayaran:</span>
                 <span className="font-bold text-slate-800 uppercase">
-                  {createdSuccessOrder.paymentType === "cash" ? "Bayar Tunai (COD)" : "QRIS"}
+                  {createdSuccessOrder.paymentType === "cod" || createdSuccessOrder.paymentType === "cash"
+                    ? "Bayar Tunai (COD)"
+                    : "QRIS"}
                 </span>
               </div>
               <div className="pt-2 border-t border-[#eae7dc] text-[11px] text-[#727168]">
